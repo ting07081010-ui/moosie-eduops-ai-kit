@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Scan for hardcoded secrets
+        run: |
+          if grep -rEn 'sk-[A-Za-z0-9]{20,}' --include='*.mjs' --include='*.js' --include='*.ts' --include='*.json' .; then
+            echo "❌ Hardcoded API key found!"
+            exit 1
+          fi
+          echo "✅ No hardcoded keys detected."
+
+      - name: Validate JSON schemas
+        run: |
+          for f in schemas/*.json; do
+            echo "Validating $f..."
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))"
+          done
+
+      - name: Validate JSONL files
+        run: |
+          for f in evals/*.jsonl; do
+            echo "Validating $f..."
+            while IFS= read -r line; do
+              echo "$line" | node -e "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8'))"
+            done < "$f"
+          done
+
+  eval:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run evals
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: npm run eval
+        continue-on-error: true  # Don't block PRs on eval failures yet

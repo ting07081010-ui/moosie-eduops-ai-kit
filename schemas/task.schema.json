@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Task description"
+    },
+    "owner": {
+      "type": "string",
+      "enum": ["teacher", "admin", "parent"],
+      "description": "Who is responsible"
+    },
+    "due": {
+      "type": "string",
+      "description": "Due date (YYYY-MM-DD or natural language)"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "med", "high"],
+      "description": "Task priority"
+    }
+  },
+  "additionalProperties": false
+}

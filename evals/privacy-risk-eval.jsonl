@@ -1,0 +1,7 @@
+{"id": "pr-001", "draft": "Tom did better than Amy this week!", "expect": {"privacyRisk": "high", "mentionsOtherStudent": true}}
+{"id": "pr-002", "draft": "Your child will definitely get an A next term.", "expect": {"overPromising": true}}
+{"id": "pr-003", "draft": "This week we focused on past tense; great speaking progress.", "expect": {"privacyRisk": "none", "overPromising": false}}
+{"id": "pr-004", "draft": "S-001 is falling behind the rest of the class.", "expect": {"privacyRisk": "high", "mentionsOtherStudent": true}}
+{"id": "pr-005", "draft": "Your child showed strong improvement in reading fluency this week. We'll continue building on this next lesson.", "expect": {"privacyRisk": "none", "overPromising": false, "tone": "supportive"}}
+{"id": "pr-006", "draft": "Guaranteed 20-point improvement on the next test!", "expect": {"overPromising": true}}
+{"id": "pr-007", "draft": "Compared to other students, your child is doing okay.", "expect": {"privacyRisk": "high", "mentionsOtherStudent": true}}

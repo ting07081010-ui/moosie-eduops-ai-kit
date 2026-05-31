@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StudentProgress",
+  "type": "object",
+  "required": ["studentCode", "records"],
+  "properties": {
+    "studentCode": {
+      "type": "string",
+      "pattern": "^S-[0-9]{3}$",
+      "description": "Opaque student identifier"
+    },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "lesson-record.schema.json" },
+      "minItems": 1,
+      "description": "Array of lesson records for trend analysis"
+    }
+  },
+  "additionalProperties": false
+}

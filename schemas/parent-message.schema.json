@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ParentMessage",
+  "type": "object",
+  "required": ["studentCode", "body"],
+  "properties": {
+    "studentCode": {
+      "type": "string",
+      "pattern": "^S-[0-9]{3}$",
+      "description": "Opaque student identifier"
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 400,
+      "description": "Message text to send to parent"
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["line", "email"],
+      "description": "Delivery channel"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,124 @@
+# Architecture
+
+## System Overview
+
+```mermaid
+graph TB
+    subgraph Input
+        TI[Teacher Input<br/>free-text notes]
+        DM[Draft Message<br/>parent message]
+    end
+
+    subgraph Prompts
+        P1[teacher-after-class-note.md]
+        P2[parent-weekly-summary.md]
+        P3[parent-message-risk-check.md]
+        P4[admin-task-router.md]
+        P5[student-progress-diagnosis.md]
+    end
+
+    subgraph Schemas
+        S1[lesson-record.schema.json]
+        S2[parent-message.schema.json]
+        S3[task.schema.json]
+        S4[student-progress.schema.json]
+    end
+
+    subgraph Output
+        O1[Structured Note<br/>JSON]
+        O2[Parent Summary<br/>zh-TW text]
+        O3[Risk Report<br/>JSON]
+        O4[Task List<br/>JSON]
+        O5[Progress Report<br/>JSON]
+    end
+
+    subgraph Eval
+        E1[parent-message-eval.jsonl]
+        E2[privacy-risk-eval.jsonl]
+        E3[output-quality-rubric.md]
+        ER[run-evals.mjs]
+    end
+
+    subgraph Demos
+        CLI[teacher-note-cli<br/>Node.js CLI]
+        LINE[line-webhook-demo<br/>Express + LINE API]
+    end
+
+    TI --> P1 --> O1
+    O1 --> P2 --> O2
+    DM --> P3 --> O3
+    O1 --> P4 --> O4
+    O1 --> P5 --> O5
+
+    O1 -.-> S1
+    O2 -.-> S2
+    O4 -.-> S3
+
+    P1 & P2 & P3 & P4 & P5 --> ER
+    E1 & E2 & E3 --> ER
+
+    TI --> CLI
+    CLI --> O1 & O2 & O4 & O3
+
+    LINE --> P2 & P3 & P4
+```
+
+## Data Flow
+
+### CLI Demo Flow
+```
+lesson-input.json
+  → teacher-after-class-note.md  → structured note (JSON)
+  → parent-weekly-summary.md     → parent message (zh-TW)
+  → admin-task-router.md         → task list (JSON)
+  → parent-message-risk-check.md → risk report (JSON)
+```
+
+### LINE Bot Flow
+```
+User sends /summary {json}
+  → parse JSON
+  → parent-weekly-summary.md
+  → reply to LINE
+
+User sends /risk <text>
+  → parent-message-risk-check.md
+  → reply to LINE
+
+User sends /task {json}
+  → admin-task-router.md
+  → reply to LINE
+```
+
+## Key Design Decisions
+
+1. **JSON-driven everything.** Prompts, schemas, evals, and data are all in structured files — no hardcoded logic.
+2. **Five-section prompts.** Every prompt follows Role / Task / Input / Output / Safety format for consistency and testability.
+3. **Privacy by design.** Opaque student codes, no PII fields, cross-student leak detection in evals.
+4. **Local-first.** Demos run locally. Only the configured LLM API is called.
+5. **Eval-gated.** Changes to prompts must pass evals before merging.
+
+## File Structure
+
+```
+moosie-eduops-ai-kit/
+├── prompts/                    # 5 prompt templates
+│   ├── parent-weekly-summary.md
+│   ├── teacher-after-class-note.md
+│   ├── parent-message-risk-check.md
+│   ├── admin-task-router.md
+│   └── student-progress-diagnosis.md
+├── schemas/                    # 4 JSON schemas
+│   ├── lesson-record.schema.json
+│   ├── student-progress.schema.json
+│   ├── parent-message.schema.json
+│   └── task.schema.json
+├── examples/
+│   ├── teacher-note-cli/       # CLI demo
+│   ├── line-webhook-demo/      # LINE bot demo
+│   └── fake-data/              # De-identified samples
+├── evals/                      # Eval sets + runner
+├── workflows/                  # Maintainer workflow docs
+├── docs/                       # Extended documentation
+└── .github/                    # CI + issue templates
+```

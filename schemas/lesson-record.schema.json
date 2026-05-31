@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LessonRecord",
+  "type": "object",
+  "required": ["studentCode", "date", "topic", "performance"],
+  "properties": {
+    "studentCode": {
+      "type": "string",
+      "pattern": "^S-[0-9]{3}$",
+      "description": "Opaque student identifier (never a real name)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Lesson date in YYYY-MM-DD format"
+    },
+    "topic": {
+      "type": "string",
+      "description": "What was taught in this lesson"
+    },
+    "performance": {
+      "type": "string",
+      "description": "Teacher's observation of student performance"
+    },
+    "homeworkStatus": {
+      "type": "string",
+      "enum": ["done", "partial", "missing"],
+      "description": "Whether homework was completed"
+    },
+    "observations": {
+      "type": "string",
+      "description": "Additional teacher notes"
+    },
+    "followUps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Action items for next lesson or follow-up"
+    }
+  },
+  "additionalProperties": false
+}
