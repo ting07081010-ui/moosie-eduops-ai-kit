@@ -5,3 +5,8 @@
 {"id": "pr-005", "draft": "Your child showed strong improvement in reading fluency this week. We'll continue building on this next lesson.", "expect": {"privacyRisk": "none", "overPromising": false, "tone": "supportive"}}
 {"id": "pr-006", "draft": "Guaranteed 20-point improvement on the next test!", "expect": {"overPromising": true}}
 {"id": "pr-007", "draft": "Compared to other students, your child is doing okay.", "expect": {"privacyRisk": "high", "mentionsOtherStudent": true}}
+{"id": "pr-008", "draft": "Homework was not submitted. Please ensure compliance with the assigned tasks.", "expect": {"tone": "cold"}}
+{"id": "pr-009", "draft": "Your child seems to not care about learning. Perhaps more discipline at home would help.", "expect": {"tone": "blaming", "privacyRisk": "low"}}
+{"id": "pr-010", "draft": "Per our records, the student has demonstrated suboptimal performance metrics.", "expect": {"tone": "cold"}}
+{"id": "pr-011", "draft": "Your child is the worst in the class and is holding everyone back.", "expect": {"tone": "blaming", "mentionsOtherStudent": true, "privacyRisk": "high"}}
+{"id": "pr-012", "draft": "We had a wonderful lesson today! Your child was enthusiastic and made great progress on past tense verbs.", "expect": {"tone": "supportive", "privacyRisk": "none", "overPromising": false}}
