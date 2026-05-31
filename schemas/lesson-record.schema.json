@@ -35,6 +35,11 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Action items for next lesson or follow-up"
+    },
+    "attendance": {
+      "type": "string",
+      "enum": ["present", "absent", "late"],
+      "description": "Student attendance status (optional)"
     }
   },
   "additionalProperties": false
