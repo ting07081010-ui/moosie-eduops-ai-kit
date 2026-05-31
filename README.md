@@ -127,7 +127,7 @@ Planned:
 - [ ] CLI batch input support
 - [ ] LINE quick-reply buttons
 - [ ] PII scanner pre-commit hook
-- [ ] Bilingual (zh-TW / en) prompt variants
+- [x] Bilingual (zh-TW / en) prompt variants — parent-weekly-summary supports `"language": "en"`
 - [ ] CI eval pipeline on every PR
 
 ## Contributing

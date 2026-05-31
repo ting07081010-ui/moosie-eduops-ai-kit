@@ -26,6 +26,13 @@ Plain text message (zh-TW). Structure:
 
 Target length: 120-180 characters (Chinese characters).
 
+## Bilingual Variant
+
+To generate an English version, add `"language": "en"` to the input JSON. When present:
+- Output in English instead of zh-TW
+- Adjust cultural tone appropriately (direct but warm)
+- Same structure: focus → observation → next step
+
 ## Safety Rules
 - NEVER promise guaranteed improvement or grades.
 - NEVER mention any other student by name or code.
