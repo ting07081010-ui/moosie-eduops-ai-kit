@@ -98,8 +98,70 @@ User sends /task {json}
 4. **Local-first.** Demos run locally. Only the configured LLM API is called.
 5. **Eval-gated.** Changes to prompts must pass evals before merging.
 
+## Sequence Diagrams
+
+### CLI: Full Pipeline
+
+```mermaid
+sequenceDiagram
+    participant T as Teacher
+    participant CLI as teacher-note-cli
+    participant AI as LLM API
+    participant O as Output
+
+    T->>CLI: --input lesson-input.json
+    CLI->>CLI: Parse JSON input
+    CLI->>AI: teacher-after-class-note.md + input
+    AI-->>CLI: Structured note (JSON)
+    CLI->>O: Print Internal Note
+
+    CLI->>AI: parent-weekly-summary.md + input
+    AI-->>CLI: Parent message (zh-TW)
+    CLI->>O: Print Parent Summary
+
+    CLI->>AI: admin-task-router.md + input
+    AI-->>CLI: Task list (JSON)
+    CLI->>O: Print Tasks
+
+    CLI->>AI: parent-message-risk-check.md + summary
+    AI-->>CLI: Risk report (JSON)
+    CLI->>O: Print Risk Check
+```
+
+### Privacy: What Data Flows Where
+
+```mermaid
+flowchart LR
+    subgraph SAFE[✅ Safe to Share]
+        SC[Student Code: S-001]
+        TP[Topic: Past tense]
+        PF[Performance: good speaking]
+        HW[Homework: partial]
+    end
+
+    subgraph NEVER[❌ Never in Repo]
+        RN[Real Names]
+        PH[Phone Numbers]
+        EM[Email Addresses]
+        AD[Addresses]
+        PAY[Payment Data]
+    end
+
+    subgraph OUTPUT[📤 Generated Output]
+        MSG[Parent Message]
+        RISK[Risk Report]
+        TASK[Task List]
+    end
+
+    SAFE --> MSG
+    SAFE --> RISK
+    SAFE --> TASK
+    NEVER -.->|blocked by schema + eval| MSG
+```
+
 ## File Structure
 
+```
 ```
 moosie-eduops-ai-kit/
 ├── prompts/                    # 5 prompt templates
