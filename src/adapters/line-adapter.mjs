@@ -15,6 +15,7 @@ import {
   checkParentMessageRisk,
   extractAdminTasks,
   quickRiskCheck,
+  runQualityGate,
 } from "../core/index.mjs";
 
 /**
@@ -48,10 +49,13 @@ export async function handleTeacherInput(teacherText) {
   // Step 2: Generate parent summary
   const parentSummary = await generateParentSummary(lessonRecord);
 
-  // Step 3: Risk check
+  // Step 3: Quality gate (multi-check)
+  const qualityResult = runQualityGate(parentSummary, lessonRecord);
+
+  // Step 4: Risk check (LLM-based)
   const riskReport = await checkParentMessageRisk(parentSummary, lessonRecord);
 
-  // Step 4: Extract tasks
+  // Step 5: Extract tasks
   const tasks = await extractAdminTasks(lessonRecord);
 
   // Step 5: Format response

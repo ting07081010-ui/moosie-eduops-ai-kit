@@ -69,6 +69,13 @@ Things the parent can do at home to support learning.
 - **med**: Homework follow-up, scheduling, material prep, retention signal = yellow
 - **low**: Routine reminders, optional enrichment, retention signal = green
 
+## Risk Grading (inspired by Claw-ED's approval policy)
+Each task should also have a `riskLevel`:
+- **read_only**: Observation or check (e.g., "check homework status")
+- **write_local**: Changes local data (e.g., "update student record")
+- **network_call**: Sends external communication (e.g., "send parent message")
+- **requires_approval**: Needs human sign-off before executing (e.g., "send tuition renewal reminder")
+
 ## Safety Rules
 - Do not invent tasks.
 - Keep task descriptions concrete and actionable.

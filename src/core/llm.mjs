@@ -21,7 +21,7 @@ import { config } from "./config.mjs";
  * @returns {Promise<string>}
  */
 export async function callLLM(systemPrompt, userPayload, opts = {}) {
-  const { temperature = 0.3, maxRetries = 2 } = opts;
+  const { temperature = 0.2, maxRetries = 2 } = opts;
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {

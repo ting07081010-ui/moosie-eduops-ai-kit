@@ -15,6 +15,7 @@ import {
   extractAdminTasks,
   validateLessonRecord,
   validateConfig,
+  runQualityGate,
 } from "../core/index.mjs";
 
 async function main() {
@@ -75,6 +76,18 @@ async function main() {
   console.log("\n💬 Parent Summary:");
   const summary = await generateParentSummary(lessonRecord);
   console.log(summary);
+
+  // Quality gate
+  console.log("\n🎯 Quality Gate:");
+  const quality = runQualityGate(summary, lessonRecord);
+  console.log(`  Score: ${quality.score}/100`);
+  console.log(`  Pass: ${quality.pass ? "✅" : "❌"}`);
+  for (const check of quality.checks) {
+    console.log(`  ${check.pass ? "✓" : "✗"} ${check.name}`);
+  }
+  if (quality.issues.length > 0) {
+    console.log(`  Issues: ${quality.issues.join("; ")}`);
+  }
 
   // Risk check
   console.log("\n🔒 Risk Check:");
