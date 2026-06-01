@@ -18,6 +18,26 @@
       "type": "string",
       "enum": ["line", "email"],
       "description": "Delivery channel"
+    },
+    "messageType": {
+      "type": "string",
+      "enum": ["weekly_summary", "homework_reminder", "absence_followup", "progress_alert", "renewal_support"],
+      "description": "Type of parent message"
+    },
+    "riskStatus": {
+      "type": "string",
+      "enum": ["unchecked", "safe", "needs_review", "blocked"],
+      "description": "Risk check status — must be 'safe' before sending"
+    },
+    "approvedBy": {
+      "type": "string",
+      "enum": ["teacher", "admin"],
+      "description": "Who approved this message for sending"
+    },
+    "sentAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When the message was actually sent (null = not yet)"
     }
   },
   "additionalProperties": false

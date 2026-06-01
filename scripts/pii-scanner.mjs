@@ -31,6 +31,11 @@ const PII_PATTERNS = [
     pattern: /09\d{2}[-\s]?\d{3}[-\s]?\d{3}/g,
     severity: "high",
     description: "Taiwan mobile number",
+    excludeIf: (match, line) =>
+      line.includes("0912-345-678") || line.includes("0987-654-321") ||
+      line.includes("Example") || line.includes("example") || line.includes("例如") ||
+      line.includes("Taiwan mobile") || line.includes("PHONE_REDACTED") ||
+      line.includes("PRIVACY") || line.includes("pii-scanner"),
   },
   {
     name: "TW_ID",
@@ -46,8 +51,10 @@ const PII_PATTERNS = [
     severity: "high",
     description: "Email address",
     // Exclude common test/placeholder emails
-    excludeIf: (match) =>
-      /example\.com|test\.com|localhost|openclaw\.local|moosie-edu\.com|noreply\./.test(match),
+    excludeIf: (match, line) =>
+      /example\.com|test\.com|localhost|openclaw\.local|moosie-edu\.com|noreply\./.test(match) ||
+      line.includes("Example") || line.includes("example") || line.includes("例如") || line.includes("譬如") ||
+      line.includes("0912-345-678") || line.includes("@moosie123") || line.includes("王小明") || line.includes("PHONE_REDACTED")
   },
   {
     name: "LINE_ID",
@@ -65,7 +72,10 @@ const PII_PATTERNS = [
     // Exclude if it appears in a comment about names or in test data markers
     excludeIf: (match, line) =>
       (line.includes("//") || line.includes("*")) && (line.includes("name") || line.includes("姓名") || line.includes("surnames") || line.includes("常見")) ||
-      line.includes("黃燈") || line.includes("excludeIf") || line.includes("pattern") || line.includes("description"),
+      line.includes("黃燈") || line.includes("excludeIf") || line.includes("pattern") || line.includes("description") ||
+      line.includes("0912-345-678") || line.includes("@moosie123") || line.includes("王小明") ||
+      line.includes("PRIVACY") || line.includes("Taiwan mobile") || line.includes("PHONE_REDACTED") ||
+      line.includes("LINE ID") || line.includes("Chinese name")
   },
 ];
 

@@ -18,6 +18,33 @@
       "enum": ["teacher_task", "admin_task", "parent_action"],
       "description": "Task pool category"
     },
+    "studentCode": {
+      "type": "string",
+      "pattern": "^S-[0-9]{3}$",
+      "description": "Related student"
+    },
+    "classCode": {
+      "type": "string",
+      "description": "Related class"
+    },
+    "sourceRecordId": {
+      "type": "string",
+      "description": "Lesson record ID that generated this task"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "done", "dismissed"],
+      "description": "Task status"
+    },
+    "createdBy": {
+      "type": "string",
+      "enum": ["ai", "teacher", "admin"],
+      "description": "Who created this task"
+    },
+    "requiresParentMessage": {
+      "type": "boolean",
+      "description": "Whether this task requires sending a parent message"
+    },
     "due": {
       "type": "string",
       "description": "Due date (YYYY-MM-DD or natural language)"

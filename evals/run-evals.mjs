@@ -138,6 +138,45 @@ function validateProgressDiagnosisStructure(cases) {
   return fail === 0;
 }
 
+function validateMoosieQualityStructure(cases) {
+  console.log("\n🎯 Moosie Quality Eval — Structure Validation");
+  console.log("─".repeat(60));
+
+  let pass = 0;
+  let fail = 0;
+
+  for (const tc of cases) {
+    const issues = [];
+
+    if (!tc.id) issues.push("missing id");
+    if (!tc.input) issues.push("missing input");
+    if (!tc.expect) issues.push("missing expect");
+
+    if (tc.input) {
+      if (!tc.input.studentCode) issues.push("missing studentCode");
+      if (!tc.input.topic) issues.push("missing topic");
+      if (!tc.input.performance) issues.push("missing performance");
+    }
+
+    if (tc.expect) {
+      const validKeys = [
+        "has_specific_observation", "has_parent_action", "no_empty_praise",
+        "no_overpromise", "no_anxiety_fuel", "moosie_tone"
+      ];
+      for (const key of Object.keys(tc.expect)) {
+        if (!validKeys.includes(key)) issues.push(`unknown expect key: ${key}`);
+      }
+    }
+
+    const ok = issues.length === 0;
+    if (ok) pass++; else fail++;
+    console.log(`  ${ok ? "✅" : "❌"} ${tc.id}: ${ok ? "valid" : issues.join(", ")}`);
+  }
+
+  console.log(`\n  Result: ${pass}/${pass + fail} cases structurally valid`);
+  return fail === 0;
+}
+
 function runSecretScan() {
   console.log("\n🔑 Secret Scan");
   console.log("─".repeat(60));
@@ -369,6 +408,14 @@ async function main() {
         results.progressDiagnosisStructure = validateProgressDiagnosisStructure(cases);
       } catch {
         console.log("\n📊 Progress Diagnosis: file not found, skipping");
+      }
+    }
+    if (set === "all" || set === "moosie-quality") {
+      try {
+        const cases = loadJsonl("evals/moosie-quality-eval.jsonl");
+        results.moosieQualityStructure = validateMoosieQualityStructure(cases);
+      } catch {
+        console.log("\n🎯 Moosie Quality: file not found, skipping");
       }
     }
     if (set === "all") {
