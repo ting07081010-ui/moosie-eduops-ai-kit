@@ -1,9 +1,11 @@
 {
   "studentCode": "S-001",
   "classCode": "M-ESL-G3-A",
+  "teacherCode": "T-001",
   "date": "2026-06-01",
   "lessonType": "grammar",
   "topic": "Past tense storytelling",
+  "learningObjective": "Use past tense to describe daily activities with correct irregular verbs",
   "cefrTarget": "A2",
   "skills": {
     "speaking": 3,
@@ -11,7 +13,8 @@
     "reading": 3,
     "writing": 2,
     "grammar": 2,
-    "participation": 4
+    "participation": 4,
+    "confidence": 3
   },
   "performance": "Could form regular past tense well; mixed up irregular verbs (go/went, eat/ate). Confident speaking, hesitant writing.",
   "evidence": [

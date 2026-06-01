@@ -1,9 +1,11 @@
 {
   "studentCode": "S-003",
   "classCode": "M-ESL-G4-A",
+  "teacherCode": "T-001",
   "date": "2026-05-28",
   "lessonType": "reading",
   "topic": "Reading comprehension — short stories",
+  "learningObjective": "Identify main idea and supporting details in a short narrative",
   "cefrTarget": "B1",
   "skills": {
     "speaking": 3,
@@ -11,7 +13,8 @@
     "reading": 4,
     "writing": 2,
     "grammar": 3,
-    "participation": 4
+    "participation": 4,
+    "confidence": 4
   },
   "performance": "Fluency improved significantly. Can identify main idea and supporting details. Vocabulary still limited.",
   "evidence": [

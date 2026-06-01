@@ -1,9 +1,11 @@
 {
   "studentCode": "S-002",
   "classCode": "M-ESL-G2-B",
+  "teacherCode": "T-002",
   "date": "2026-05-29",
   "lessonType": "phonics",
   "topic": "Phonics — consonant blends (bl-, cl-, fl-, gr-, tr-)",
+  "learningObjective": "Recognize and produce initial consonant blends accurately",
   "cefrTarget": "A1",
   "skills": {
     "speaking": 2,
@@ -11,7 +13,8 @@
     "reading": 2,
     "writing": 2,
     "grammar": 2,
-    "participation": 4
+    "participation": 4,
+    "confidence": 3
   },
   "performance": "Struggled with bl-, cl-, fl- blends. Improved with gr- and tr-. Needs more practice with initial blends.",
   "evidence": [

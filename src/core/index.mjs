@@ -10,6 +10,6 @@ export { generateParentSummary } from "./generate-parent-summary.mjs";
 export { checkParentMessageRisk, quickRiskCheck } from "./check-parent-message-risk.mjs";
 export { extractAdminTasks } from "./extract-admin-tasks.mjs";
 export { diagnoseStudentProgress } from "./diagnose-student-progress.mjs";
-export { validateLessonRecord, assertValidLessonRecord } from "./schema-validator.mjs";
+export { validateLessonRecord, assertValidLessonRecord, validateParentMessage, validateTask } from "./schema-validator.mjs";
 export { config, validateConfig } from "./config.mjs";
 export { callLLM, callLLMJson, callLLMJsonValidated } from "./llm.mjs";
