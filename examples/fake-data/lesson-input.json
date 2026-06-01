@@ -1,9 +1,28 @@
 {
   "studentCode": "S-001",
-  "date": "2026-05-30",
+  "classCode": "M-ESL-G3-A",
+  "date": "2026-06-01",
+  "lessonType": "grammar",
   "topic": "Past tense storytelling",
-  "performance": "Could form regular past tense well; mixed up irregular verbs (go/went, eat/ate).",
+  "cefrTarget": "A2",
+  "skills": {
+    "speaking": 3,
+    "listening": 3,
+    "reading": 3,
+    "writing": 2,
+    "grammar": 2,
+    "participation": 4
+  },
+  "performance": "Could form regular past tense well; mixed up irregular verbs (go/went, eat/ate). Confident speaking, hesitant writing.",
+  "evidence": [
+    "Said 'I goed to school' before self-correcting to 'I went'",
+    "Enjoyed the story task and volunteered to share"
+  ],
   "homeworkStatus": "partial",
+  "parentAction": "每天用 3 分鐘請孩子用英文說一件今天做過的事，先求敢說就好",
+  "teacherNextStep": "下次用遊戲方式練習 irregular verbs，搭配動作加深記憶",
+  "retentionSignal": "green",
   "observations": "Confident speaking, hesitant writing. Enjoyed the story task.",
-  "followUps": ["Send irregular verb practice sheet", "Check writing next week"]
+  "followUps": ["Send irregular verb practice sheet", "Check writing next week"],
+  "attendance": "present"
 }

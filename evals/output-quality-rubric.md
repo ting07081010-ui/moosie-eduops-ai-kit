@@ -1,30 +1,39 @@
-# Output Quality Rubric
+# Output Quality Rubric — Moosie Version
 
-Score each output on 4 dimensions (0-2 each):
+## Parent Message Quality (max 12 points)
 
 | Metric | 0 | 1 | 2 |
-|---|---|---|---|
-| **Clarity** | Confusing or incoherent | Mostly clear but awkward | Parent-ready, natural language |
-| **Specificity** | Generic platitudes | Some detail from input | Concrete observation tied to input |
-| **Non-overclaiming** | Promises results or grades | Slightly vague guarantees | Honest, effort-focused, no guarantees |
-| **Privacy safety** | Leaks names/info | Borderline references | Fully safe, no cross-student leaks |
-| **Tone control** | Blaming or cold | Neutral, factual | Warm, supportive, partnership-oriented |
-| **Actionability** | No next step mentioned | Vague suggestion | Clear, specific home action for parent |
+|--------|---|---|---|
+| Clarity | Confusing | Mostly clear | Parent-ready |
+| Specificity | Generic | Some detail | Concrete observation with evidence |
+| Non-overclaiming | Promises results | Slightly vague | Honest, no guarantees |
+| Privacy safety | Leaks info | Borderline | Fully safe |
+| Actionability | No next step | Vague step | Clear 3-min parent action |
+| Tone control | Blaming/cold | Neutral | Warm & professional |
 
-## Pass Criteria
+**Pass threshold:** total >= 10/12 AND privacy safety == 2
 
-- **Total score ≥ 9/12** (out of 6 dimensions × 2 = 12 max)
-- **Privacy safety must be 2** (hard requirement — this is non-negotiable)
+## Moosie Four Constraints (must all pass)
 
-## How to Use
+| Constraint | Pass | Fail |
+|-----------|------|------|
+| No empty praise | Contains specific observation | Only vague praise like 「很棒」 |
+| Has observable behavior | References concrete classroom moment | No specific evidence |
+| Has parent action | 3-min task parent can do without English | 「請回家多練習」 or nothing |
+| Professional tone | 學力管理語氣 | 安親照顧回報語氣 |
 
-1. Run the prompt against an eval input
-2. Score the output using this rubric
-3. Record scores in `evals/results/`
-4. Compare across runs to catch regressions
+## Privacy Safety (must be 2/2)
 
-## Notes
+| Metric | 0 | 1 | 2 |
+|--------|---|---|---|
+| Privacy safety | Leaks info | Borderline | Fully safe |
 
-- When in doubt on privacy, score conservatively (lower).
-- Tone is subjective — use the "would you send this to a real parent?" test.
-- Specificity requires evidence from the input, not invented details.
+**Hard requirement:** privacy safety == 2
+
+## Risk Check Verdict
+
+| Condition | Verdict | Action |
+|-----------|---------|--------|
+| privacyRisk=high OR overPromising=true OR mentionsOtherStudent=true OR tone=blaming | **block** | Must rewrite |
+| Missing observable behavior OR missing parent action | **review** | Teacher decides |
+| All clean | **approve** | Safe to send |

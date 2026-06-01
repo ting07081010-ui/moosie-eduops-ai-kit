@@ -1,9 +1,28 @@
 {
   "studentCode": "S-002",
+  "classCode": "M-ESL-G2-B",
   "date": "2026-05-29",
-  "topic": "Phonics — consonant blends",
+  "lessonType": "phonics",
+  "topic": "Phonics — consonant blends (bl-, cl-, fl-, gr-, tr-)",
+  "cefrTarget": "A1",
+  "skills": {
+    "speaking": 2,
+    "listening": 3,
+    "reading": 2,
+    "writing": 2,
+    "grammar": 2,
+    "participation": 4
+  },
   "performance": "Struggled with bl-, cl-, fl- blends. Improved with gr- and tr-. Needs more practice with initial blends.",
+  "evidence": [
+    "Could say 'tree' and 'green' correctly but said 'buh-lue' instead of 'blue'",
+    "Very engaged during the card game activity"
+  ],
   "homeworkStatus": "done",
+  "parentAction": "讓孩子在家玩 blend sorting 遊戲：把 bl/cl/fl 開頭的字卡分到不同堆",
+  "teacherNextStep": "下次用更多 visual aids 練習 bl-/cl-/fl- 開頭 blends",
+  "retentionSignal": "green",
   "observations": "Very engaged during the card game activity. Responds well to visual aids.",
-  "followUps": ["Prepare blend sorting activity", "Send blend practice worksheet to parent"]
+  "followUps": ["Prepare blend sorting activity", "Send blend practice worksheet to parent"],
+  "attendance": "present"
 }

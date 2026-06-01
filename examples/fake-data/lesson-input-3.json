@@ -1,9 +1,28 @@
 {
   "studentCode": "S-003",
+  "classCode": "M-ESL-G4-A",
   "date": "2026-05-28",
+  "lessonType": "reading",
   "topic": "Reading comprehension — short stories",
+  "cefrTarget": "B1",
+  "skills": {
+    "speaking": 3,
+    "listening": 3,
+    "reading": 4,
+    "writing": 2,
+    "grammar": 3,
+    "participation": 4
+  },
   "performance": "Fluency improved significantly. Can identify main idea and supporting details. Vocabulary still limited.",
+  "evidence": [
+    "Read aloud with more confidence than last month",
+    "Asked good questions about character motivation: 'Why did he run away?'"
+  ],
   "homeworkStatus": "done",
+  "parentAction": "讓孩子閱讀 10 分鐘後，用中文說出「這個故事在講什麼」，訓練摘要能力",
+  "teacherNextStep": "下次引入 slightly harder texts，並開始 vocabulary journal",
+  "retentionSignal": "green",
   "observations": "Read aloud with more confidence than last month. Asked good questions about character motivation.",
-  "followUps": ["Introduce slightly harder texts next week", "Start vocabulary journal"]
+  "followUps": ["Introduce slightly harder texts next week", "Start vocabulary journal"],
+  "attendance": "present"
 }
