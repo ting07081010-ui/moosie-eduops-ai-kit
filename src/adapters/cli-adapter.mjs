@@ -39,16 +39,20 @@ async function main() {
     console.log("🎓 Moosie EduOps — Demo Mode\n");
     const input = "S-003 今天上 past tense，口說比上週順，但 irregular verbs 還會混淆。作業完成一半，下次補 irregular verb worksheet。";
     console.log(`Teacher input: "${input}"\n`);
-    lessonRecord = await generateLessonRecord(input);
+    const result = await generateLessonRecord(input);
+    lessonRecord = result.data;
+    if (result.warnings.length > 0) console.log(`⚠️  Warnings: ${result.warnings.join(", ")}`);
   } else if (inputIdx !== -1 && args[inputIdx + 1]) {
-    lessonRecord = await generateLessonRecord(args[inputIdx + 1]);
+    const result = await generateLessonRecord(args[inputIdx + 1]);
+    lessonRecord = result.data;
+    if (result.warnings.length > 0) console.log(`⚠️  Warnings: ${result.warnings.join(", ")}`);
   } else if (fileIdx !== -1 && args[fileIdx + 1]) {
     const data = JSON.parse(fs.readFileSync(args[fileIdx + 1], "utf8"));
-    // If it's already a structured lesson record, use it directly
     if (data.studentCode && data.topic) {
       lessonRecord = data;
     } else {
-      lessonRecord = await generateLessonRecord(JSON.stringify(data));
+      const result = await generateLessonRecord(JSON.stringify(data));
+      lessonRecord = result.data;
     }
   } else {
     console.log("Usage:");

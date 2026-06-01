@@ -42,8 +42,8 @@ export const QUICK_REPLIES = [
  * @returns {Promise<object>} Formatted response for LINE
  */
 export async function handleTeacherInput(teacherText) {
-  // Step 1: Generate lesson record
-  const lessonRecord = await generateLessonRecord(teacherText);
+  // Step 1: Generate lesson record (with schema validation + auto-retry)
+  const { data: lessonRecord, warnings } = await generateLessonRecord(teacherText);
 
   // Step 2: Generate parent summary
   const parentSummary = await generateParentSummary(lessonRecord);
