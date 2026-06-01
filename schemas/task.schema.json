@@ -13,6 +13,11 @@
       "enum": ["teacher", "admin", "parent"],
       "description": "Who is responsible"
     },
+    "pool": {
+      "type": "string",
+      "enum": ["teacher_task", "admin_task", "parent_action"],
+      "description": "Task pool category"
+    },
     "due": {
       "type": "string",
       "description": "Due date (YYYY-MM-DD or natural language)"

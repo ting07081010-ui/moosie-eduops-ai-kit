@@ -9,23 +9,67 @@
       "pattern": "^S-[0-9]{3}$",
       "description": "Opaque student identifier (never a real name)"
     },
+    "classCode": {
+      "type": "string",
+      "description": "Class identifier, e.g. M-ESL-G3-A"
+    },
     "date": {
       "type": "string",
       "format": "date",
       "description": "Lesson date in YYYY-MM-DD format"
     },
+    "lessonType": {
+      "type": "string",
+      "enum": ["reading", "speaking", "writing", "grammar", "project", "listening", "vocab"],
+      "description": "Primary skill focus of this lesson"
+    },
     "topic": {
       "type": "string",
       "description": "What was taught in this lesson"
     },
+    "cefrTarget": {
+      "type": "string",
+      "enum": ["Pre-A1", "A1", "A2", "B1", "B2", "C1"],
+      "description": "CEFR level target for this student"
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "speaking": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "listening": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "reading": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "writing": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "grammar": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "participation": { "type": "integer", "minimum": 1, "maximum": 5 }
+      },
+      "description": "Skill ratings (1-5) observed in this lesson"
+    },
     "performance": {
       "type": "string",
-      "description": "Teacher's observation of student performance"
+      "description": "Objective observation of student performance"
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific observable moments from the lesson"
     },
     "homeworkStatus": {
       "type": "string",
       "enum": ["done", "partial", "missing"],
       "description": "Whether homework was completed"
+    },
+    "parentAction": {
+      "type": "string",
+      "description": "One specific action the parent can do at home this week"
+    },
+    "teacherNextStep": {
+      "type": "string",
+      "description": "What the teacher will do next lesson"
+    },
+    "retentionSignal": {
+      "type": "string",
+      "enum": ["green", "yellow", "red"],
+      "description": "Retention risk: green=stable, yellow=watch, red=at-risk"
     },
     "observations": {
       "type": "string",
