@@ -22,6 +22,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: PII scan
+        run: node scripts/pii-scanner.mjs
+
       - name: Scan for hardcoded secrets
         run: |
           if grep -rEn 'sk-[A-Za-z0-9]{20,}' --include='*.mjs' --include='*.js' --include='*.ts' --include='*.json' .; then

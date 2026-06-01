@@ -12,4 +12,4 @@ export { extractAdminTasks } from "./extract-admin-tasks.mjs";
 export { diagnoseStudentProgress } from "./diagnose-student-progress.mjs";
 export { validateLessonRecord, assertValidLessonRecord } from "./schema-validator.mjs";
 export { config, validateConfig } from "./config.mjs";
-export { callLLM, callLLMJson } from "./llm.mjs";
+export { callLLM, callLLMJson, callLLMJsonValidated } from "./llm.mjs";

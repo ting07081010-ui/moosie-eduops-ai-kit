@@ -8,13 +8,26 @@
     "line": "node examples/line-webhook-demo/server.mjs",
     "eval": "node evals/run-evals.mjs --live",
     "eval:structural": "node evals/run-evals.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "scan": "node scripts/pii-scanner.mjs",
+    "prepare": "husky"
   },
-  "keywords": ["education", "ai", "llm", "prompt-engineering", "line-bot", "privacy", "edtech"],
+  "keywords": [
+    "education",
+    "ai",
+    "llm",
+    "prompt-engineering",
+    "line-bot",
+    "privacy",
+    "edtech"
+  ],
   "author": "Moosie Edu",
   "license": "MIT",
   "dependencies": {
-    "openai": "^4.0.0",
-    "express": "^4.19.0"
+    "express": "^4.19.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }

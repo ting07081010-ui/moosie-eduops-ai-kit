@@ -1,0 +1,5 @@
+#!/bin/sh
+# Pre-commit hook: PII scanner
+# Blocks commits containing potential real PII (Taiwan mobile, LINE ID, email, etc.)
+
+node scripts/pii-scanner.mjs --staged
