@@ -19,6 +19,7 @@ import crypto from "node:crypto";
 import {
   generateLessonRecord,
   generateParentSummary,
+  generateIrregularVerbPractice,
   checkParentMessageRisk,
   extractAdminTasks,
   quickRiskCheck,
@@ -287,19 +288,21 @@ async function handleGeneratePractice(studentCode) {
     };
   }
 
-  // Generate a practice suggestion based on the record
+  const practice = await generateIrregularVerbPractice(record);
+
   let msg = `【補強練習 — ${studentCode}】\n\n`;
-  msg += `本週主題：${record.topic}\n`;
-  msg += `觀察：${record.performance}\n\n`;
+  msg += `${practice.title || "Irregular verb retrieval practice"}\n`;
+  msg += `Focus：${(practice.focusVerbs || []).join(", ")}\n\n`;
 
-  if (record.followUps && record.followUps.length > 0) {
-    msg += `建議練習：\n`;
-    for (const f of record.followUps) msg += `• ${f}\n`;
+  for (const activity of practice.activities || []) {
+    msg += `• ${activity.name}（${activity.minutes} 分鐘）\n`;
+    msg += `  ${activity.instructionsZhTw}\n`;
+    if (activity.example) msg += `  例：${activity.example}\n`;
   }
 
-  if (record.teacherNextStep) {
-    msg += `\n老師下一步：${record.teacherNextStep}`;
-  }
+  msg += `\n家長 3 分鐘：${practice.parentAction || "請孩子說出今天做過的三件事，先用中文提示，再試著說英文動詞。"}`;
+  msg += `\n老師下一步：${practice.teacherNextStep || "下次準備 3 組常見 irregular verbs 做短句練習。"}`;
+  if (practice.safetyNote) msg += `\n提醒：${practice.safetyNote}`;
 
   return {
     type: "text",

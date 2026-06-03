@@ -177,6 +177,46 @@ function validateMoosieQualityStructure(cases) {
   return fail === 0;
 }
 
+function validateIrregularVerbPracticeStructure(cases) {
+  console.log("\n📖 Irregular Verb Practice Eval — Structure Validation");
+  console.log("─".repeat(60));
+
+  let pass = 0;
+  let fail = 0;
+
+  for (const tc of cases) {
+    const issues = [];
+
+    if (!tc.id) issues.push("missing id");
+    if (!tc.input) issues.push("missing input");
+    if (!tc.expect) issues.push("missing expect");
+
+    if (tc.input) {
+      if (!tc.input.studentCode) issues.push("missing studentCode");
+      if (!tc.input.topic) issues.push("missing topic");
+      if (!tc.input.performance) issues.push("missing performance");
+    }
+
+    if (tc.expect) {
+      const validKeys = [
+        "hasFocusVerbs", "activityCountMin", "hasParentAction", "hasTeacherNextStep",
+        "minutesMax", "parentActionNoEnglishRequired", "noOverpromise", "noShaming",
+        "noPeerComparison", "noOverDrilling"
+      ];
+      for (const key of Object.keys(tc.expect)) {
+        if (!validKeys.includes(key)) issues.push(`unknown expect key: ${key}`);
+      }
+    }
+
+    const ok = issues.length === 0;
+    if (ok) pass++; else fail++;
+    console.log(`  ${ok ? "✅" : "❌"} ${tc.id}: ${ok ? "valid" : issues.join(", ")}`);
+  }
+
+  console.log(`\n  Result: ${pass}/${pass + fail} cases structurally valid`);
+  return fail === 0;
+}
+
 function runSecretScan() {
   console.log("\n🔑 Secret Scan");
   console.log("─".repeat(60));
@@ -416,6 +456,14 @@ async function main() {
         results.moosieQualityStructure = validateMoosieQualityStructure(cases);
       } catch {
         console.log("\n🎯 Moosie Quality: file not found, skipping");
+      }
+    }
+    if (set === "all" || set === "irregular-verb-practice") {
+      try {
+        const cases = loadJsonl("evals/irregular-verb-practice-eval.jsonl");
+        results.irregularVerbPracticeStructure = validateIrregularVerbPracticeStructure(cases);
+      } catch {
+        console.log("\n📖 Irregular Verb Practice: file not found, skipping");
       }
     }
     if (set === "all") {

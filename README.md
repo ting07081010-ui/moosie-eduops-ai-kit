@@ -25,7 +25,7 @@ no safe way to handle minors' data.
 
 | Module | What it gives you |
 |---|---|
-| `prompts/` | Parent weekly summary, after-class note, risk check, task router, progress diagnosis |
+| `prompts/` | Parent weekly summary, after-class note, risk check, task router, progress diagnosis, irregular-verb practice |
 | `schemas/` | JSON schemas for student progress, lesson record, parent message, task |
 | `examples/teacher-note-cli/` | Runnable CLI: teacher input → note + parent summary + tasks + risks |
 | `examples/line-webhook-demo/` | LINE bot with /summary /risk /task |
@@ -67,7 +67,8 @@ moosie-eduops-ai-kit/
 │   ├── teacher-after-class-note.md
 │   ├── parent-message-risk-check.md
 │   ├── admin-task-router.md
-│   └── student-progress-diagnosis.md
+│   ├── student-progress-diagnosis.md
+│   └── irregular-verb-practice.md
 ├── schemas/                    # JSON schemas (4 types)
 │   ├── lesson-record.schema.json
 │   ├── student-progress.schema.json
@@ -126,7 +127,7 @@ This repo uses Codex-powered workflows for:
 See the [open issues](../../issues) and [milestones](../../milestones).
 
 Planned:
-- [ ] Irregular-verb practice prompt
+- [x] Irregular-verb practice prompt
 - [x] CLI batch input support
 - [x] LINE quick-reply buttons
 - [x] PII scanner pre-commit hook

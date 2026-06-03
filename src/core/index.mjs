@@ -7,6 +7,7 @@
 
 export { generateLessonRecord } from "./generate-lesson-record.mjs";
 export { generateParentSummary } from "./generate-parent-summary.mjs";
+export { generateIrregularVerbPractice } from "./generate-irregular-verb-practice.mjs";
 export { checkParentMessageRisk, quickRiskCheck } from "./check-parent-message-risk.mjs";
 export { extractAdminTasks } from "./extract-admin-tasks.mjs";
 export { diagnoseStudentProgress } from "./diagnose-student-progress.mjs";
