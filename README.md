@@ -119,7 +119,7 @@ This repo uses Codex-powered workflows for:
 |---|---|
 | [PR Review](workflows/pr-review.md) | Checks prompts for over-promising, PII leaks, schema compliance |
 | [Issue Triage](workflows/issue-triage.md) | Auto-labels: bug / feature / docs / privacy / education |
-| [Release Notes](workflows/release-note.md) | Generates changelog from Conventional Commits |
+| [Release Notes](workflows/release-note.md) | Generates changelog from Conventional Commits via `npm run changelog` / GitHub Actions |
 | [Security Review](workflows/security-review.md) | Scans for hardcoded keys, minor data risks |
 
 ## Roadmap

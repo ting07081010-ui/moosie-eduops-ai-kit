@@ -1,13 +1,13 @@
 # Release Notes Workflow
 
-Use this workflow to generate release notes from merged PRs.
+Use this workflow to generate release notes from Conventional Commits.
 
 ## Process
 
-1. Collect all merged PRs since last release
-2. Group by label (feat, fix, docs, chore)
-3. Generate changelog
-4. Create GitHub release
+1. Trigger the `Draft Release Notes` GitHub Action manually
+2. Provide the target version and optional starting tag / commit
+3. Download the generated `RELEASE_NOTES.md` artifact
+4. Review the notes before creating a GitHub release
 
 ## Changelog Format
 
@@ -54,6 +54,9 @@ Also compute the version bump:
 ## Manual Steps
 
 ```bash
+# Draft release notes locally
+npm run changelog -- --version v0.1.0 --output RELEASE_NOTES.md
+
 # Tag the release
 git tag v0.1.0
 git push origin v0.1.0

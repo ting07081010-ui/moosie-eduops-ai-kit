@@ -11,6 +11,7 @@
     "eval:structural": "node evals/run-evals.mjs",
     "test": "node --test",
     "scan": "node scripts/pii-scanner.mjs",
+    "changelog": "node scripts/generate-changelog.mjs",
     "prepare": "husky"
   },
   "keywords": [

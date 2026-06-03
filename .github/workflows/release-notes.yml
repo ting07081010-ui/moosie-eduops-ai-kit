@@ -1,0 +1,40 @@
+name: Draft Release Notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. v0.2.0"
+        required: true
+        default: "Unreleased"
+      since:
+        description: "Git tag or commit to diff from. Leave blank to use latest tag."
+        required: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate release notes
+        run: |
+          if [ -n "${{ inputs.since }}" ]; then
+            npm run changelog -- --version "${{ inputs.version }}" --since "${{ inputs.since }}" --output RELEASE_NOTES.md
+          else
+            npm run changelog -- --version "${{ inputs.version }}" --output RELEASE_NOTES.md
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
