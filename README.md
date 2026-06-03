@@ -46,7 +46,10 @@ cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY
 
 # Run CLI demo
-npm run cli -- --input examples/fake-data/lesson-input.json
+npm run cli -- --file examples/fake-data/lesson-input.json
+
+# Process all lesson JSON files in a folder
+npm run cli -- --input-dir examples/fake-data
 
 # Run evals
 npm run eval
@@ -124,7 +127,7 @@ See the [open issues](../../issues) and [milestones](../../milestones).
 
 Planned:
 - [ ] Irregular-verb practice prompt
-- [ ] CLI batch input support
+- [x] CLI batch input support
 - [x] LINE quick-reply buttons
 - [x] PII scanner pre-commit hook
 - [x] Bilingual (zh-TW / en) prompt variants — parent-weekly-summary supports `"language": "en"`
