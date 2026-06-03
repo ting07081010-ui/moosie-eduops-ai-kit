@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "cli": "node src/adapters/cli-adapter.mjs",
-    "line": "node examples/line-webhook-demo/server.mjs",
+    "line": "node src/adapters/line-webhook-server.mjs",
+    "line:demo": "node examples/line-webhook-demo/server.mjs",
     "eval": "node evals/run-evals.mjs --live",
     "eval:structural": "node evals/run-evals.mjs",
     "test": "node --test",

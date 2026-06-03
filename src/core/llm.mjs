@@ -172,7 +172,7 @@ export async function callLLMJsonValidated(systemPrompt, userPayload, validatorF
  * @returns {object} Parsed JSON
  * @throws {Error} If no valid JSON found
  */
-function extractJson(raw) {
+export function extractJson(raw) {
   const trimmed = raw.trim();
 
   // Try 1: Direct parse

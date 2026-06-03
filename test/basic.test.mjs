@@ -3,6 +3,9 @@ import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { quickRiskCheck, computeVerdict } from "../src/core/check-parent-message-risk.mjs";
+import { extractJson } from "../src/core/llm.mjs";
+import { validateLessonRecord, validateParentMessage, validateTask } from "../src/core/schema-validator.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -132,5 +135,85 @@ describe("Eval Files", () => {
         assert(parsed.expect, `${file} entry missing expect`);
       }
     }
+  });
+});
+
+describe("Risk Gate", () => {
+  it("computes blocking verdicts deterministically", () => {
+    assert.equal(computeVerdict({ privacyRisk: "high" }), "block");
+    assert.equal(computeVerdict({ overPromising: true }), "block");
+    assert.equal(computeVerdict({ mentionsOtherStudent: true }), "block");
+    assert.equal(computeVerdict({ tone: "blaming" }), "block");
+  });
+
+  it("computes review and approve verdicts deterministically", () => {
+    assert.equal(computeVerdict({ hasObservableBehavior: false }), "review");
+    assert.equal(computeVerdict({ hasParentAction: false }), "review");
+    assert.equal(computeVerdict({ privacyRisk: "low" }), "review");
+    assert.equal(computeVerdict({ privacyRisk: "none", tone: "neutral" }), "approve");
+  });
+
+  it("flags obvious risky parent message drafts without an LLM call", () => {
+    const result = quickRiskCheck("其他同學都會了，他一定會進步，不認真只會更差");
+
+    assert.equal(result.hasIssues, true);
+    assert(result.quickFlags.includes("mentionsOther"));
+    assert(result.quickFlags.includes("overPromising"));
+    assert(result.quickFlags.includes("blamingTone"));
+  });
+});
+
+describe("LLM JSON Extraction", () => {
+  it("parses direct JSON", () => {
+    assert.deepEqual(extractJson('{"ok":true}'), { ok: true });
+  });
+
+  it("parses JSON inside markdown fences", () => {
+    assert.deepEqual(extractJson('```json\n{"verdict":"approve"}\n```'), {
+      verdict: "approve",
+    });
+  });
+
+  it("parses embedded JSON from surrounding text", () => {
+    assert.deepEqual(extractJson('Result follows: {"tasks":["call parent"]}'), {
+      tasks: ["call parent"],
+    });
+  });
+
+  it("throws a clear error when no JSON is present", () => {
+    assert.throws(() => extractJson("no structured output"), /No valid JSON/);
+  });
+});
+
+describe("Core Validators", () => {
+  it("rejects invalid lesson record enum values and skill ratings", () => {
+    const result = validateLessonRecord({
+      studentCode: "S-001",
+      date: "2026-06-01",
+      topic: "Past tense",
+      performance: "Improving",
+      lessonType: "phonics",
+      skills: { speaking: 6 },
+    });
+
+    assert.equal(result.valid, false);
+    assert(result.errors.some((e) => e.includes("Invalid lessonType")));
+    assert(result.errors.some((e) => e.includes("Invalid skill rating")));
+  });
+
+  it("warns when parent messages have not passed the risk gate", () => {
+    const result = validateParentMessage({ studentCode: "S-001", body: "今天能說出三個過去式句子。" });
+
+    assert.equal(result.valid, true);
+    assert(result.warnings.includes("riskStatus should be checked before sending"));
+    assert(result.warnings.includes("approvedBy should be set before sending"));
+  });
+
+  it("rejects invalid task ownership metadata", () => {
+    const result = validateTask({ title: "Send worksheet", owner: "student", status: "todo" });
+
+    assert.equal(result.valid, false);
+    assert(result.errors.some((e) => e.includes("Invalid owner")));
+    assert(result.errors.some((e) => e.includes("Invalid status")));
   });
 });

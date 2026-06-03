@@ -12,5 +12,5 @@ export { extractAdminTasks } from "./extract-admin-tasks.mjs";
 export { diagnoseStudentProgress } from "./diagnose-student-progress.mjs";
 export { validateLessonRecord, assertValidLessonRecord, validateParentMessage, validateTask } from "./schema-validator.mjs";
 export { config, validateConfig } from "./config.mjs";
-export { callLLM, callLLMJson, callLLMJsonValidated } from "./llm.mjs";
+export { callLLM, callLLMJson, callLLMJsonValidated, extractJson } from "./llm.mjs";
 export { runQualityGate } from "./quality-gate.mjs";

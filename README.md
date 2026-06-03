@@ -6,8 +6,8 @@
 > maintainer workflows.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/moosie-edu/moosie-eduops-ai-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/moosie-edu/moosie-eduops-ai-kit/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/moosie-edu/moosie-eduops-ai-kit)](https://github.com/moosie-edu/moosie-eduops-ai-kit/releases)
+[![CI](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ting07081010-ui/moosie-eduops-ai-kit)](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/releases)
 
 ## The Problem
 
@@ -37,7 +37,7 @@ no safe way to handle minors' data.
 
 ```bash
 # Clone & install
-git clone https://github.com/moosie-edu/moosie-eduops-ai-kit.git
+git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
 cd moosie-eduops-ai-kit
 npm install
 
@@ -125,10 +125,10 @@ See the [open issues](../../issues) and [milestones](../../milestones).
 Planned:
 - [ ] Irregular-verb practice prompt
 - [ ] CLI batch input support
-- [ ] LINE quick-reply buttons
-- [ ] PII scanner pre-commit hook
+- [x] LINE quick-reply buttons
+- [x] PII scanner pre-commit hook
 - [x] Bilingual (zh-TW / en) prompt variants — parent-weekly-summary supports `"language": "en"`
-- [ ] CI eval pipeline on every PR
+- [x] CI eval pipeline on every PR
 
 ## Contributing
 

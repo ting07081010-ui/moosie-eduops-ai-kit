@@ -51,7 +51,7 @@ export async function checkParentMessageRisk(draft, lessonRecord = {}) {
  * @param {object} report
  * @returns {"approve" | "block" | "review"}
  */
-function computeVerdict(report) {
+export function computeVerdict(report) {
   // Block conditions
   if (report.privacyRisk === "high") return "block";
   if (report.overPromising === true) return "block";

@@ -98,6 +98,16 @@ function buildQuickReply(excludeAction) {
 
 const lessonRecords = new Map(); // studentCode → latest lesson record
 const riskReports = new Map(); // studentCode → latest risk report
+const sessionStudentCodes = new Map(); // LINE source key → latest studentCode
+
+function getSessionKey(event) {
+  const source = event.source || {};
+  return source.userId || source.groupId || source.roomId || "global";
+}
+
+function getLastStudentCode(event) {
+  return sessionStudentCodes.get(getSessionKey(event)) || [...lessonRecords.keys()].pop();
+}
 
 // ── Action Handlers ────────────────────────────────────────────
 
@@ -105,10 +115,11 @@ const riskReports = new Map(); // studentCode → latest risk report
  * Handle teacher's natural language input.
  * Full pipeline: input → lesson record → parent summary → risk check → tasks
  */
-async function handleTeacherInput(text) {
+async function handleTeacherInput(text, sessionKey) {
   // Step 1: Generate lesson record (with schema validation + auto-retry)
   const { data: record, warnings } = await generateLessonRecord(text);
   lessonRecords.set(record.studentCode, record);
+  sessionStudentCodes.set(sessionKey, record.studentCode);
 
   // Step 2: Generate parent summary
   const summary = await generateParentSummary(record);
@@ -347,8 +358,8 @@ async function handleMessage(event) {
   // Quick reply action routing
   switch (text) {
     case "generate_summary": {
-      // Need student code from context — use last active
-      const lastCode = [...lessonRecords.keys()].pop();
+      // Resolve the latest student from this LINE source context.
+      const lastCode = getLastStudentCode(event);
       if (lastCode) {
         return replyMessage(replyToken, await handleGenerateSummary(lastCode));
       }
@@ -360,7 +371,7 @@ async function handleMessage(event) {
     }
 
     case "check_risk": {
-      const lastCode = [...lessonRecords.keys()].pop();
+      const lastCode = getLastStudentCode(event);
       if (lastCode) {
         return replyMessage(replyToken, await handleCheckRisk(lastCode));
       }
@@ -372,7 +383,7 @@ async function handleMessage(event) {
     }
 
     case "extract_tasks": {
-      const lastCode = [...lessonRecords.keys()].pop();
+      const lastCode = getLastStudentCode(event);
       if (lastCode) {
         return replyMessage(replyToken, await handleExtractTasks(lastCode));
       }
@@ -384,7 +395,7 @@ async function handleMessage(event) {
     }
 
     case "generate_practice": {
-      const lastCode = [...lessonRecords.keys()].pop();
+      const lastCode = getLastStudentCode(event);
       if (lastCode) {
         return replyMessage(replyToken, await handleGeneratePractice(lastCode));
       }
@@ -403,7 +414,7 @@ async function handleMessage(event) {
   // Check if this looks like teacher input (contains student code pattern)
   if (/^S-\d{3}\s/.test(text) || text.length > 10) {
     try {
-      const response = await handleTeacherInput(text);
+      const response = await handleTeacherInput(text, getSessionKey(event));
       return replyMessage(replyToken, response);
     } catch (err) {
       console.error("handleTeacherInput error:", err);
