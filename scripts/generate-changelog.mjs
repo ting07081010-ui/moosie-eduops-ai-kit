@@ -8,7 +8,7 @@
  */
 
 import fs from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 
@@ -17,13 +17,13 @@ function getArg(name) {
   return idx === -1 ? null : args[idx + 1];
 }
 
-function run(command) {
-  return execSync(command, { encoding: "utf8" }).trim();
+function git(args) {
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
 
 function getLastTag() {
   try {
-    return run("git describe --tags --abbrev=0");
+    return git(["describe", "--tags", "--abbrev=0"]);
   } catch {
     return null;
   }
@@ -31,7 +31,7 @@ function getLastTag() {
 
 function getCommitLines(since) {
   const range = since ? `${since}..HEAD` : "HEAD";
-  return run(`git log ${range} --pretty=format:%H%x09%s`)
+  return git(["log", range, "--pretty=format:%H%x09%s"])
     .split("\n")
     .filter(Boolean);
 }
