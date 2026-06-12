@@ -178,14 +178,14 @@ See [evals/output-quality-rubric.md](evals/output-quality-rubric.md).
 
 ## Maintainer Workflows
 
-This repo uses Codex-powered workflows for:
+This repo uses AI-assisted maintainer workflows for:
 
-| Workflow | What Codex does |
+| Workflow | What it does |
 |---|---|
-| [PR Review](workflows/pr-review.md) | Checks prompts for over-promising, PII leaks, schema compliance |
-| [Issue Triage](workflows/issue-triage.md) | Auto-labels: bug / feature / docs / privacy / education |
-| [Release Notes](workflows/release-note.md) | Generates changelog from Conventional Commits via `npm run changelog` / GitHub Actions |
-| [Security Review](workflows/security-review.md) | Scans for hardcoded keys, minor data risks |
+| [PR Review](workflows/pr-review.md) | Checks prompts for over-promising, PII leaks, and schema compliance |
+| [Issue Triage](workflows/issue-triage.md) | Labels bugs, features, docs, privacy issues, and education workflow requests |
+| [Release Notes](workflows/release-note.md) | Generates changelog drafts from conventional commits |
+| [Security Review](workflows/security-review.md) | Scans for hardcoded keys, minors-data risks, and unsafe workflow patterns |
 
 ## Quick Start
 
@@ -214,7 +214,7 @@ npm test
 
 ## Project Status
 
-Current version: operations
+Current version: 0.2.0
 
 This project is early-stage but runnable.
 
@@ -263,14 +263,25 @@ The project focuses on a gap that is often under-served by enterprise AI tooling
 
 ## Roadmap
 
-### v0.2.0 — Better Local Adoption
+### Completed in v0.2.0 — OSS Readiness
 
-- [ ] Add Traditional Chinese prompt variants
-- [ ] Add more fake lesson datasets
-- [ ] Improve CLI output formatting
-- [ ] Add PII scanner pre-commit hook
-- [ ] Add screenshots / terminal demo GIF
+- [x] Add clearer project positioning
+- [x] Add demo paths
+- [x] Add example output
+- [x] Add privacy model
+- [x] Add ecosystem impact section
+- [x] Add issue templates
+- [x] Add pull request template
+- [x] Add PII scanner script
+- [x] Add batch CLI support
+
+### v0.2.1 — Documentation and Trust Signals
+
+- [ ] Add terminal demo GIF
+- [ ] Add screenshots
 - [ ] Add beginner setup guide
+- [ ] Add zh-TW README summary
+- [ ] Add adoption notes from real small-school workflows using fake data
 
 ### v0.3.0 — Workflow Integrations
 
