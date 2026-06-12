@@ -1,34 +1,57 @@
 # Contributing
 
-Thanks for helping make AI safer for small schools!
+Thank you for considering a contribution.
 
-## Ground Rules
+This project welcomes practical improvements for small education teams, especially:
 
-1. **Never commit real student, parent, or teacher data.** Use de-identified fake data only.
-2. One change = one branch = one pull request.
-3. Use [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `chore:`, `test:`.
-4. Every new prompt or schema change must include or update an eval.
+- New prompt templates
+- Better JSON schemas
+- Fake datasets
+- Eval cases
+- Traditional Chinese translations
+- Privacy-risk checks
+- Documentation improvements
+- LINE bot workflow examples
 
-## Dev Setup
+## Contribution Principles
+
+1. Do not submit real student data.
+2. Do not include names, phone numbers, addresses, school names, or identifiable parent messages.
+3. Use fake IDs such as `S-001`, `Student A`, `Parent B`.
+4. Keep outputs specific but not overconfident.
+5. Avoid medical, psychological, or diagnostic claims.
+6. Add eval cases when changing prompts.
+
+## Local Setup
 
 ```bash
+git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
+cd moosie-eduops-ai-kit
 npm install
-cp .env.example .env   # add your OPENAI_API_KEY
+cp .env.example .env
 npm test
 npm run eval
 ```
 
 ## Pull Request Checklist
 
-- [ ] No real PII in code, tests, or fixtures
-- [ ] Prompts pass evals (`npm run eval`)
-- [ ] Docs updated if behavior changed
-- [ ] Linked to an issue
-- [ ] Conventional Commit messages
+Before opening a PR:
 
-## Where to Start
+- [ ] I did not include real student data
+- [ ] I used fake or de-identified sample data only
+- [ ] I updated docs if behavior changed
+- [ ] I added or updated eval cases if prompts changed
+- [ ] I ran `npm test`
+- [ ] I ran `npm run eval`
+- [ ] I checked for privacy risks
 
-Look for issues labeled [`good first issue`](../../labels/good%20first%20issue) and [`help wanted`](../../labels/help%20wanted).
+## Good First Contributions
+
+- Add one fake lesson input
+- Add one Traditional Chinese parent summary prompt
+- Improve README clarity
+- Add one privacy-risk eval case
+- Add one LINE command example
 
 ## Adding a New Prompt
 
