@@ -1,62 +1,136 @@
 # Moosie EduOps AI Kit
 
-> Open-source AI operations toolkit for small education providers (tutoring schools)
-> that have no engineering team. Reusable prompts, JSON schemas, a runnable
-> LINE bot / CLI demo, de-identified datasets, evals, and privacy-aware
-> maintainer workflows.
+> Privacy-first AI operations toolkit for small education providers: reusable prompts, JSON schemas, fake datasets, CLI/LINE demos, evals, and maintainer workflows.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/ting07081010-ui/moosie-eduops-ai-kit)](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/releases)
+Small tutoring schools and education teams often want AI support, but they usually lack engineering staff, evaluation processes, and safe data-handling patterns for minors' learning data.
 
-## The Problem
+This repo turns practical AI operations workflows into reusable open-source building blocks.
 
-Small tutoring schools spend hours every week on teacher admin and parent
-communication. They want AI help but have no engineers, no eval process, and
-no safe way to handle minors' data.
+## What You Can Build
 
-## Who Is This For
+With this kit, you can prototype:
 
-- Small English / subject tutoring schools
-- Solo teachers and small teaching teams
-- EdTech builders who need a privacy-first starting point
+- Teacher note → structured lesson record
+- Lesson record → parent-friendly weekly summary
+- Student progress data → learner profile
+- Teacher/admin message → task routing
+- Parent message → privacy and overclaiming risk check
+- LINE bot command → summary / risk / task workflow
+- Prompt output → eval scoring and safety check
 
-## What's Inside
+## Why This Exists
 
-| Module | What it gives you |
-|---|---|
-| `prompts/` | Parent weekly summary, after-class note, risk check, task router, progress diagnosis, irregular-verb practice |
-| `schemas/` | JSON schemas for student progress, lesson record, parent message, task |
-| `examples/teacher-note-cli/` | Runnable CLI: teacher input → note + parent summary + tasks + risks |
-| `examples/line-webhook-demo/` | LINE bot with /summary /risk /task |
-| `examples/fake-data/` | De-identified sample data (safe to use) |
-| `evals/` | Eval sets + quality rubric for parent messages and privacy risk |
-| `workflows/` | Maintainer workflows for issue triage, PR review, release, security |
+Most AI examples are designed for engineering teams.
 
-## Quick Start
+Small education providers need something different:
+
+- Runnable examples instead of abstract strategy
+- Fake data instead of real student data
+- JSON schemas instead of loose chat outputs
+- Evaluation rubrics instead of blind trust
+- Privacy-aware workflows for minors
+- Traditional Chinese education contexts
+
+This project is an open-source attempt to make responsible AI workflows usable by small schools, solo teachers, churches, nonprofits, and local community teams.
+
+## Demo Paths
+
+Choose one path depending on what you want to test.
+
+### 1. Teacher Note CLI
+
+Use this when you want to test the core workflow locally.
 
 ```bash
-# Clone & install
-git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
-cd moosie-eduops-ai-kit
 npm install
-
-# Configure
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
-
-# Run CLI demo
 npm run cli -- --file examples/fake-data/lesson-input.json
-
-# Process all lesson JSON files in a folder
-npm run cli -- --input-dir examples/fake-data
-
-# Run evals
-npm run eval
-
-# Run tests
-npm test
 ```
+
+Expected output:
+- Structured lesson note
+- Parent summary
+- Admin tasks
+- Risk flags
+
+### 2. Batch Lesson Processing
+
+Use this when you want to process multiple fake lesson records.
+
+```bash
+npm run cli -- --input-dir examples/fake-data
+```
+
+### 3. Prompt Quality Evals
+
+Use this when you want to check output quality and privacy risk.
+
+```bash
+npm run eval
+```
+
+### 4. LINE Webhook Demo
+
+Use this when you want to test a lightweight LINE bot workflow.
+
+Supported demo commands:
+- `/summary`
+- `/risk`
+- `/task`
+
+---
+
+## Example Output
+
+Input: a short teacher note after class.
+
+```json
+{
+  "student_id": "S-001",
+  "lesson_topic": "Past tense verbs",
+  "teacher_note": "Student A understood regular past tense but still confused go/went and eat/ate. She participated actively during the speaking game.",
+  "parent_context": "Parent wants practical feedback and one home practice suggestion."
+}
+```
+
+Output:
+
+```json
+{
+  "parent_summary": "Student A participated actively today and showed good understanding of regular past tense forms. The main next step is to strengthen irregular verbs such as go/went and eat/ate.",
+  "home_practice": "Ask Student A to say three sentences about yesterday using went, ate, and saw.",
+  "tasks": [
+    {
+      "owner": "teacher",
+      "task": "Prepare irregular verb speaking drill for next class",
+      "priority": "medium"
+    }
+  ],
+  "risk_flags": []
+}
+```
+
+The fake data intentionally avoids real names, contact details, school names, or identifiable student records.
+
+## Privacy Model
+
+This project is designed for education contexts involving minors.
+
+Default rules:
+
+- Never commit real student data
+- Use fake IDs such as `S-001`
+- Avoid full names, phone numbers, addresses, school names, or parent contact details
+- Do not mention one student in another student's parent message
+- Do not generate medical, psychological, or diagnostic claims
+- Do not overpromise progress
+- Run privacy-risk evals before accepting new prompt templates
+
+See:
+
+- [PRIVACY.md](./PRIVACY.md)
+- [docs/privacy-and-minors.md](./docs/privacy-and-minors.md)
+- [evals/output-quality-rubric.md](./evals/output-quality-rubric.md)
 
 ## Architecture
 
@@ -85,16 +159,6 @@ moosie-eduops-ai-kit/
 
 See [docs/architecture.md](docs/architecture.md) for a detailed diagram.
 
-## Privacy First
-
-This project **never** ships real student data. See:
-- [PRIVACY.md](PRIVACY.md) — core privacy principles
-- [docs/privacy-and-minors.md](docs/privacy-and-minors.md) — detailed guidance
-
-All examples use de-identified fake data (e.g., "S-001", "Student A").
-Prompts and schemas only request fields needed for the task.
-A parent message must never reference another student — enforced by the privacy-risk eval.
-
 ## Evaluation
 
 Run evals to check prompt quality:
@@ -104,6 +168,7 @@ npm run eval
 ```
 
 Evals cover:
+
 - **Parent message quality** — clarity, specificity, non-overclaiming, tone
 - **Privacy risk** — no cross-student leaks, no over-promising, no PII
 
@@ -122,21 +187,111 @@ This repo uses Codex-powered workflows for:
 | [Release Notes](workflows/release-note.md) | Generates changelog from Conventional Commits via `npm run changelog` / GitHub Actions |
 | [Security Review](workflows/security-review.md) | Scans for hardcoded keys, minor data risks |
 
+## Quick Start
+
+```bash
+# Clone & install
+git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
+cd moosie-eduops-ai-kit
+npm install
+
+# Configure
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
+
+# Run CLI demo
+npm run cli -- --file examples/fake-data/lesson-input.json
+
+# Process all lesson JSON files in a folder
+npm run cli -- --input-dir examples/fake-data
+
+# Run evals
+npm run eval
+
+# Run tests
+npm test
+```
+
+## Project Status
+
+Current version: operations
+
+This project is early-stage but runnable.
+
+**Stable:**
+
+- Prompt templates
+- JSON schemas
+- Fake data examples
+- Teacher-note CLI demo
+- Basic eval runner
+- Privacy documentation
+
+**Experimental:**
+
+- LINE webhook demo
+- Batch processing
+- Maintainer workflows
+- Bilingual prompt variants
+- CI eval pipeline
+
+## Ecosystem Impact
+
+This repo is designed for small education teams and local community organizations that want to adopt AI workflows but cannot afford a dedicated engineering team.
+
+**Potential downstream users:**
+
+- Small tutoring schools
+- Solo teachers
+- Church education teams
+- Nonprofit learning programs
+- Local community learning centers
+- EdTech builders working in Traditional Chinese contexts
+
+**Reusable components:**
+
+- Prompt templates
+- JSON schemas
+- Fake education datasets
+- CLI workflow examples
+- LINE bot demo patterns
+- Prompt evaluation rubrics
+- Privacy-risk review workflows
+- Maintainer workflows for AI-assisted open source work
+
+The project focuses on a gap that is often under-served by enterprise AI tooling: practical, privacy-aware, small-team AI operations in education.
+
 ## Roadmap
 
-See the [open issues](../../issues) and [milestones](../../milestones).
+### v0.2.0 — Better Local Adoption
 
-Planned:
-- [x] Irregular-verb practice prompt
-- [x] CLI batch input support
-- [x] LINE quick-reply buttons
-- [x] PII scanner pre-commit hook
-- [x] Bilingual (zh-TW / en) prompt variants — parent-weekly-summary supports `"language": "en"`
-- [x] CI eval pipeline on every PR
+- [ ] Add Traditional Chinese prompt variants
+- [ ] Add more fake lesson datasets
+- [ ] Improve CLI output formatting
+- [ ] Add PII scanner pre-commit hook
+- [ ] Add screenshots / terminal demo GIF
+- [ ] Add beginner setup guide
+
+### v0.3.0 — Workflow Integrations
+
+- [ ] Improve LINE quick-reply flow
+- [ ] Add Google Sheets export example
+- [ ] Add parent insight workflow example
+- [ ] Add Granola-style meeting note import example
+- [ ] Add admin dashboard mock output
+
+### v0.4.0 — Evaluation and Governance
+
+- [ ] Run evals in CI on every PR
+- [ ] Add unsafe-output regression cases
+- [ ] Add bilingual eval rubrics
+- [ ] Add maintainer review checklist
+- [ ] Add release governance template
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). We welcome:
+
 - New prompts and eval cases
 - Schema improvements
 - Translations
