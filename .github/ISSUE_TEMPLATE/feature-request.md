@@ -1,21 +1,35 @@
 ---
 name: Feature Request
-about: Suggest a new prompt, schema, eval, or improvement
+about: Suggest a new workflow or capability
 title: '[feat] '
 labels: enhancement
-assignees: ''
 ---
 
 ## Problem
-What problem does this solve? Who benefits?
+
+What small education team problem does this solve?
 
 ## Proposed Solution
+
 Describe the change you'd like.
 
-## Privacy Check
-- [ ] Does this involve real student data? (must be no)
-- [ ] Does this add new PII fields? (must be no)
-- [ ] Are evals included or updated?
+## Example Workflow
 
-## Alternatives Considered
-Other approaches you've thought about.
+**Input:**
+
+**Output:**
+
+## Who Benefits?
+
+- [ ] Solo teacher
+- [ ] Small tutoring school
+- [ ] Admin team
+- [ ] Parent communication
+- [ ] EdTech builder
+- [ ] Nonprofit / community team
+
+## Privacy Considerations
+
+- [ ] Does not involve real student data
+- [ ] Does not add new PII fields
+- [ ] Includes or updates eval cases

@@ -48,6 +48,7 @@ npm run cli -- --file examples/fake-data/lesson-input.json
 ```
 
 Expected output:
+
 - Structured lesson note
 - Parent summary
 - Admin tasks
@@ -74,6 +75,7 @@ npm run eval
 Use this when you want to test a lightweight LINE bot workflow.
 
 Supported demo commands:
+
 - `/summary`
 - `/risk`
 - `/task`

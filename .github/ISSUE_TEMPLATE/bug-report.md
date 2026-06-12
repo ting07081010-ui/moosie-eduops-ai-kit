@@ -3,24 +3,35 @@ name: Bug Report
 about: Report a bug or unexpected behavior
 title: '[bug] '
 labels: bug
-assignees: ''
 ---
 
-## Description
+## What happened?
+
 A clear description of the bug.
 
 ## Steps to Reproduce
+
 1. Run `...`
 2. With input `...`
 3. See error `...`
 
 ## Expected Behavior
+
 What you expected to happen.
 
 ## Actual Behavior
+
 What actually happened.
 
 ## Environment
+
 - Node.js version:
 - OS:
 - Package version:
+
+## Screenshots or Logs
+
+## Privacy Check
+
+- [ ] I did not include real student data
+- [ ] I removed names, phone numbers, addresses, and identifiable details
