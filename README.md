@@ -1,10 +1,13 @@
 # Moosie EduOps AI Kit
 
-> Privacy-first AI operations toolkit for small education providers: reusable prompts, JSON schemas, fake datasets, CLI/LINE demos, evals, and maintainer workflows.
+> Privacy-first AI operations toolkit for small education providers: reusable prompts, JSON schemas, fake datasets, CLI/LINE demos, evals, and AI-assisted maintainer workflow patterns.
 
 Small tutoring schools and education teams often want AI support, but they usually lack engineering staff, evaluation processes, and safe data-handling patterns for minors' learning data.
 
 This repo turns practical AI operations workflows into reusable open-source building blocks.
+
+This is not a generic tutoring app. It is an open-source reference
+implementation for privacy-aware AI operations in small education providers.
 
 ## What You Can Build
 
@@ -133,6 +136,7 @@ See:
 - [PRIVACY.md](./PRIVACY.md)
 - [docs/privacy-and-minors.md](./docs/privacy-and-minors.md)
 - [evals/output-quality-rubric.md](./evals/output-quality-rubric.md)
+- [examples/fake-data/students.json](./examples/fake-data/students.json)
 
 ## Architecture
 
@@ -174,20 +178,20 @@ Evals cover:
 - **Parent message quality** — clarity, specificity, non-overclaiming, tone
 - **Privacy risk** — no cross-student leaks, no over-promising, no PII
 
-Pass threshold: score ≥ 9/12 AND privacy safety == 2.
+Pass threshold: total >= 10/12 AND privacy safety == 2.
 
 See [evals/output-quality-rubric.md](evals/output-quality-rubric.md).
 
 ## Maintainer Workflows
 
-This repo uses AI-assisted maintainer workflows for:
+This repo documents AI-assisted maintainer workflows for privacy-aware education AI operations:
 
-| Workflow | What it does |
+| Workflow | What it checks |
 |---|---|
-| [PR Review](workflows/pr-review.md) | Checks prompts for over-promising, PII leaks, and schema compliance |
-| [Issue Triage](workflows/issue-triage.md) | Labels bugs, features, docs, privacy issues, and education workflow requests |
-| [Release Notes](workflows/release-note.md) | Generates changelog drafts from conventional commits |
-| [Security Review](workflows/security-review.md) | Scans for hardcoded keys, minors-data risks, and unsafe workflow patterns |
+| [PR Review](workflows/pr-review.md) | Prompt quality, over-promising, PII leaks, schema compliance |
+| [Issue Triage](workflows/issue-triage.md) | Bugs, features, docs, privacy issues, education workflow requests |
+| [Release Notes](workflows/release-note.md) | Changelog drafts from Conventional Commits |
+| [Security Review](workflows/security-review.md) | Hardcoded keys, minors-data risks, unsafe workflow patterns |
 
 ## Quick Start
 
@@ -216,7 +220,7 @@ npm test
 
 ## Project Status
 
-Current version: 0.2.0
+Current version: 0.2.1
 
 This project is early-stage but runnable.
 
@@ -277,13 +281,23 @@ The project focuses on a gap that is often under-served by enterprise AI tooling
 - [x] Add PII scanner script
 - [x] Add batch CLI support
 
-### v0.2.1 — Documentation and Trust Signals
+### Completed in v0.2.1 — Consistency and OSS Readiness
+
+- [x] Add fake student profile data
+- [x] Align README and rubric eval thresholds
+- [x] Update CLI usage notes
+- [x] Add LINE webhook demo README
+- [x] Add OSS application summary
+- [x] Add demo script
+- [x] Add adoption notes
+
+### v0.2.2 — Documentation and Trust Signals
 
 - [ ] Add terminal demo GIF
 - [ ] Add screenshots
 - [ ] Add beginner setup guide
 - [ ] Add zh-TW README summary
-- [ ] Add adoption notes from real small-school workflows using fake data
+- [ ] Add adoption notes from additional small-school workflows using fake data
 
 ### v0.3.0 — Workflow Integrations
 

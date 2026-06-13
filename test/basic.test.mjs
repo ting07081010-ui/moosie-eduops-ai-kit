@@ -92,6 +92,11 @@ describe("Prompts", () => {
 describe("Fake Data", () => {
   const dataDir = path.join(ROOT, "examples", "fake-data");
 
+  function assertFakeStudentCode(record, file) {
+    assert(record.studentCode, `${file} missing studentCode`);
+    assert.match(record.studentCode, /^S-\d{3}$/, `${file} studentCode should be S-XXX`);
+  }
+
   it("all fake data files are valid JSON", () => {
     const files = fs.readdirSync(dataDir).filter((f) => f.endsWith(".json"));
     assert(files.length >= 2, "Expected at least 2 fake data files");
@@ -99,8 +104,14 @@ describe("Fake Data", () => {
     for (const file of files) {
       const content = fs.readFileSync(path.join(dataDir, file), "utf8");
       const parsed = JSON.parse(content);
-      assert(parsed.studentCode, `${file} missing studentCode`);
-      assert.match(parsed.studentCode, /^S-\d{3}$/, `${file} studentCode should be S-XXX`);
+      if (Array.isArray(parsed)) {
+        assert(parsed.length > 0, `${file} should not be empty`);
+        for (const record of parsed) {
+          assertFakeStudentCode(record, file);
+        }
+      } else {
+        assertFakeStudentCode(parsed, file);
+      }
     }
   });
 

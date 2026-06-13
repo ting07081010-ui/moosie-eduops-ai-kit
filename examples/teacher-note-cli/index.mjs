@@ -7,7 +7,10 @@
  * Output: 4 sections — internal note, parent summary, tasks, risk check
  *
  * Usage:
- *   npm run cli -- --input examples/fake-data/lesson-input.json
+ *   npm run cli -- --file examples/fake-data/lesson-input.json
+ *   npm run cli -- --input "S-003 practiced past tense speaking and still needs help with went/ate."
+ *   npm run cli -- --input-dir examples/fake-data
+ *   npm run cli -- --demo
  */
 
 import fs from "node:fs";

@@ -46,6 +46,16 @@ async function loadLessonRecordFromFile(filePath) {
   return generateLessonRecord(JSON.stringify(data));
 }
 
+function isLessonRecordFile(filePath) {
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return Boolean(
+    data &&
+    !Array.isArray(data) &&
+    data.studentCode &&
+    (data.topic || data.teacher_note || data.teacherNote || data.performance)
+  );
+}
+
 async function runPipeline(lessonRecord, { compact = false } = {}) {
   const validation = validateLessonRecord(lessonRecord);
 
@@ -100,16 +110,25 @@ async function runPipeline(lessonRecord, { compact = false } = {}) {
 
 async function runBatch(inputDir) {
   const dir = path.resolve(inputDir);
-  const files = fs.readdirSync(dir)
+  const jsonFiles = fs.readdirSync(dir)
     .filter((name) => name.endsWith(".json"))
     .sort()
     .map((name) => path.join(dir, name));
 
+  const files = jsonFiles.filter((file) => {
+    try {
+      return isLessonRecordFile(file);
+    } catch {
+      return false;
+    }
+  });
+  const skipped = jsonFiles.length - files.length;
+
   if (files.length === 0) {
-    throw new Error(`No .json files found in ${dir}`);
+    throw new Error(`No lesson record .json files found in ${dir}`);
   }
 
-  console.log(`🎓 Moosie EduOps — Batch Mode (${files.length} file(s))\n`);
+  console.log(`🎓 Moosie EduOps — Batch Mode (${files.length} lesson file(s), ${skipped} skipped)\n`);
 
   const rows = [];
   for (const file of files) {
@@ -136,7 +155,7 @@ async function runBatch(inputDir) {
 
   const failed = rows.filter((row) => row.status === "FAIL").length;
   const review = rows.filter((row) => row.status === "REVIEW").length;
-  console.log(`\nSummary: ${rows.length - failed}/${rows.length} processed, ${review} need review, ${failed} failed`);
+  console.log(`\nSummary: ${rows.length - failed}/${rows.length} processed, ${review} need review, ${failed} failed, ${skipped} skipped`);
 
   if (failed > 0) {
     process.exitCode = 1;
