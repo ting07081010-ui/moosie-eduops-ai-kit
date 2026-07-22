@@ -3,7 +3,8 @@
 This page maps the repository's day-to-day maintenance procedures. It is a
 policy and evidence guide, not proof that a workflow has run. Every claim about
 issues, reviews, releases, testers, or adoption must be linked and dated in
-[`readiness-evidence.md`](readiness-evidence.md).
+[`readiness-evidence.md`](readiness-evidence.md) and the application-facing
+[`application-evidence.md`](application-evidence.md).
 
 ## Source procedures
 

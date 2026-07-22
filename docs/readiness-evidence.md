@@ -8,6 +8,10 @@
 use this file to convert an intention, template, mock, local configuration, or
 unverified statement into a readiness claim.
 
+For the application-facing, continuously updated evidence index, use
+[`application-evidence.md`](application-evidence.md). Keep this ledger as the
+policy and scoring reference; do not duplicate event records across both files.
+
 ## How to use this ledger
 
 - **Verified local evidence** is a source-tree fact or a command result recorded

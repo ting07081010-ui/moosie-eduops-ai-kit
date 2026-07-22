@@ -69,6 +69,26 @@ describe('readiness contract', () => {
     }
   })
 
+  it('keeps an application evidence pack with dated sources and honest evidence gaps', () => {
+    const evidence = read('docs/application-evidence.md')
+    const requiredSections = [
+      /maintainer role and repository control/i,
+      /release timeline/i,
+      /merged pull requests, reviews, and issue triage/i,
+      /beta testers, adopters, and anonymized feedback/i,
+      /eval coverage, pass rate, and regression history/i,
+      /clean-install evidence/i,
+      /external contributions, forks, and downstream use/i,
+      /upstream contribution status/i,
+      /codex maintenance workflow and ci/i,
+      /statistics date and data sources/i,
+    ]
+
+    for (const section of requiredSections) assert.match(evidence, section)
+    assert.match(evidence, /not recorded/i)
+    assert.match(evidence, /as of:/i)
+  })
+
   it('documents the implemented privacy boundary without claiming Presidio masking', () => {
     const privacy = read('PRIVACY.md')
 

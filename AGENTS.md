@@ -60,7 +60,8 @@ parent, teacher, school, credential, and account data out of the repository.
 Run the `docs-sync` skill when a change affects user behavior, data handling,
 workflow requirements, or a public readiness claim. Keep claims limited to
 evidence that is linked and dated in
-[`docs/readiness-evidence.md`](docs/readiness-evidence.md).
+[`docs/readiness-evidence.md`](docs/readiness-evidence.md) and the
+application-facing [`docs/application-evidence.md`](docs/application-evidence.md).
 
 ## Pull request and issue policy
 
