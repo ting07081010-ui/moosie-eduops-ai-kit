@@ -23,3 +23,15 @@ labels: prompt
 ## Privacy check
 
 - [ ] No real student data included
+
+## Maintainer Triage Record
+
+_Maintainer completes this after intake. State the source truthfully; do not
+describe a maintainer prompt test as external feedback._
+
+- Source:
+- Data handling: synthetic only / redacted summary
+- Reproduction or eval case:
+- Labels and priority:
+- Triage decision:
+- Owner and next review date:

@@ -108,8 +108,13 @@ Teacher taps "查看黃燈學生"
 1. **JSON-driven everything.** Prompts, schemas, evals, and data are all in structured files — no hardcoded logic.
 2. **Five-section prompts.** Every prompt follows Role / Task / Input / Output / Safety format for consistency and testability.
 3. **Privacy by design.** Opaque student codes, no PII fields, cross-student leak detection in evals.
-4. **Local-first.** Demos run locally. Only the configured LLM API is called.
-5. **Eval-gated.** Changes to prompts must pass evals before merging.
+4. **Local-first.** The documented mock demo runs locally without a network
+   call; the live path only calls the configured LLM API after a limited PII
+   preflight.
+5. **Deterministic-gated.** The CI test job fails on tests, structural evals,
+   the privacy regression suite, schema compatibility, and the mock CLI smoke
+   test. Live model evals remain informational until a reproducible baseline
+   is adopted.
 
 ## Sequence Diagrams
 

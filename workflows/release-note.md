@@ -12,7 +12,7 @@ Use this workflow to generate release notes from Conventional Commits.
 ## Changelog Format
 
 ```markdown
-## [0.1.0] - 2026-06-13
+## [0.1.0] - 2026-05-31
 
 ### ✨ Features
 - Added student progress diagnosis prompt (#12)

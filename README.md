@@ -42,12 +42,13 @@ Choose one path depending on what you want to test.
 
 ### 1. Teacher Note CLI
 
-Use this when you want to test the core workflow locally.
+Use this when you want to test the core workflow locally. The mock path is the
+clean-install route: it uses fake data, needs no API key, and makes no network
+call.
 
 ```bash
-npm install
-cp .env.example .env
-npm run cli -- --file examples/fake-data/lesson-input.json
+npm ci
+npm run cli:mock
 ```
 
 Expected output:
@@ -56,6 +57,13 @@ Expected output:
 - Parent summary
 - Admin tasks
 - Risk flags
+
+To run the same workflow with a configured model, create a local `.env` from
+`.env.example`, set `OPENAI_API_KEY`, and run:
+
+```bash
+npm run cli -- --file examples/fake-data/lesson-input.json
+```
 
 ### 2. Batch Lesson Processing
 
@@ -170,8 +178,13 @@ See [docs/architecture.md](docs/architecture.md) for a detailed diagram.
 Run evals to check prompt quality:
 
 ```bash
-npm run eval
+npm run eval:structural
+npm run privacy:regression
 ```
+
+`npm run eval` is an optional live-model evaluation and requires
+`OPENAI_API_KEY`. The deterministic structural and privacy checks are the
+required CI checks; the CI test job fails when they fail.
 
 Evals cover:
 
@@ -199,20 +212,23 @@ This repo documents AI-assisted maintainer workflows for privacy-aware education
 # Clone & install
 git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
 cd moosie-eduops-ai-kit
-npm install
+npm ci
 
-# Configure
+# Run the clean-install mock demo (no key or network call)
+npm run cli:mock
+
+# Optional: configure a live model for the real CLI path
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY
-
-# Run CLI demo
 npm run cli -- --file examples/fake-data/lesson-input.json
 
 # Process all lesson JSON files in a folder
 npm run cli -- --input-dir examples/fake-data
 
-# Run evals
-npm run eval
+# Run deterministic checks
+npm run eval:structural
+npm run privacy:regression
+npm run schema:compat
 
 # Run tests
 npm test
@@ -235,7 +251,7 @@ This project is early-stage but runnable.
 
 **Experimental:**
 
-- LINE webhook demo
+- LINE webhook scaffold (not a production bot or unattended delivery channel)
 - Batch processing
 - Maintainer workflows
 - Bilingual prompt variants
@@ -309,7 +325,7 @@ The project focuses on a gap that is often under-served by enterprise AI tooling
 
 ### v0.4.0 — Evaluation and Governance
 
-- [ ] Run evals in CI on every PR
+- [ ] Publish dated live-eval reports after reproducible runs
 - [ ] Add unsafe-output regression cases
 - [ ] Add bilingual eval rubrics
 - [ ] Add maintainer review checklist

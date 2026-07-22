@@ -33,3 +33,15 @@ Describe the change you'd like.
 - [ ] Does not involve real student data
 - [ ] Does not add new PII fields
 - [ ] Includes or updates eval cases
+
+## Maintainer Triage Record
+
+_Maintainer completes this after intake. State the source truthfully; do not
+describe a maintainer request as external feedback._
+
+- Source:
+- Data handling: synthetic only / redacted summary
+- Reproduction or eval case:
+- Labels and priority:
+- Triage decision:
+- Owner and next review date:

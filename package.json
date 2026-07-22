@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "cli": "node src/adapters/cli-adapter.mjs",
+    "cli:mock": "node src/adapters/cli-adapter.mjs --mock --file examples/fake-data/lesson-input.json",
     "line": "node src/adapters/line-webhook-server.mjs",
     "line:demo": "node examples/line-webhook-demo/server.mjs",
     "eval": "node evals/run-evals.mjs --live",
     "eval:structural": "node evals/run-evals.mjs",
+    "privacy:regression": "node --test test/privacy-regression.test.mjs",
+    "schema:compat": "node --test test/schema-compatibility.test.mjs",
     "test": "node --test",
     "scan": "node scripts/pii-scanner.mjs",
     "changelog": "node scripts/generate-changelog.mjs",

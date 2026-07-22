@@ -26,6 +26,7 @@ function printUsage() {
   console.log("  node cli-adapter.mjs --file examples/fake-data/lesson-input.json");
   console.log("  node cli-adapter.mjs --input-dir examples/fake-data");
   console.log("  node cli-adapter.mjs --demo");
+  console.log("  node cli-adapter.mjs --mock --file examples/fake-data/lesson-input.json");
 }
 
 function validateRuntimeConfig() {
@@ -168,6 +169,11 @@ async function main() {
   if (args.includes("--help")) {
     printUsage();
     process.exit(0);
+  }
+
+  if (args.includes("--mock")) {
+    process.env.MOOSIE_MOCK_MODE = "1";
+    console.log("🧪 Mock mode — using deterministic local responses; no API key or network call.");
   }
 
   validateRuntimeConfig();

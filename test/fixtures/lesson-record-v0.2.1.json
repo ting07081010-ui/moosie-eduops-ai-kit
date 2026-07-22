@@ -1,0 +1,24 @@
+{
+  "studentCode": "S-014",
+  "classCode": "M-ESL-G3-A",
+  "teacherCode": "T-002",
+  "date": "2026-06-13",
+  "lessonType": "grammar",
+  "topic": "Past tense storytelling",
+  "learningObjective": "Use past-tense verbs in three short sentences.",
+  "cefrTarget": "A2",
+  "skills": {
+    "speaking": 3,
+    "grammar": 3,
+    "participation": 4
+  },
+  "performance": "Can use regular past tense and is still practising irregular forms.",
+  "evidence": [
+    "Can correct one past-tense sentence after a teacher prompt."
+  ],
+  "homeworkStatus": "partial",
+  "parentAction": "Use three minutes to practise one past-tense sentence at home.",
+  "teacherNextStep": "Use a short speaking drill for irregular verbs next lesson.",
+  "retentionSignal": "green",
+  "attendance": "present"
+}

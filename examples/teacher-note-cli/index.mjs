@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertSafeForLlm } from "../../src/core/input-privacy-gate.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -40,6 +41,8 @@ function loadInput(inputPath) {
 }
 
 async function ask(systemPrompt, userPayload) {
+  assertSafeForLlm(userPayload);
+
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {

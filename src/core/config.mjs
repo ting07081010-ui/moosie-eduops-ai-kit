@@ -16,11 +16,17 @@ export const config = {
   },
 };
 
+export function isMockMode() {
+  return process.env.MOOSIE_MOCK_MODE === "1";
+}
+
 /**
  * Validate that required config is present.
  * @returns {{ ok: boolean, missing: string[] }}
  */
 export function validateConfig() {
+  if (isMockMode()) return { ok: true, missing: [] };
+
   const missing = [];
   if (!config.openai.apiKey) missing.push("OPENAI_API_KEY");
   return { ok: missing.length === 0, missing };

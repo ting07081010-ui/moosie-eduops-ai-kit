@@ -9,7 +9,9 @@
  * 5. After max retries, throw with full diagnostic
  */
 
-import { config } from "./config.mjs";
+import { config, isMockMode } from "./config.mjs";
+import { assertSafeForLlm } from "./input-privacy-gate.mjs";
+import { createMockResponse } from "./mock-llm.mjs";
 
 /**
  * Call the LLM with a system prompt and user payload.
@@ -21,6 +23,12 @@ import { config } from "./config.mjs";
  * @returns {Promise<string>}
  */
 export async function callLLM(systemPrompt, userPayload, opts = {}) {
+  assertSafeForLlm(userPayload);
+
+  if (isMockMode()) {
+    return createMockResponse(systemPrompt, userPayload);
+  }
+
   const { temperature = 0.2, maxRetries = 2 } = opts;
   let lastError;
 

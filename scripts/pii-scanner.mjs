@@ -87,6 +87,10 @@ const SCAN_EXTENSIONS = new Set([
   ".env", ".env.example",
 ]);
 
+const SCAN_FILE_NAMES = new Set([
+  ".env.example",
+]);
+
 const SKIP_DIRS = new Set([
   "node_modules", ".git", ".husky", "coverage", "dist", "build",
 ]);
@@ -127,7 +131,7 @@ function getAllFiles(dir, root = dir) {
       }
     } else if (entry.isFile()) {
       const ext = path.extname(entry.name);
-      if (SCAN_EXTENSIONS.has(ext) && !SKIP_FILES.has(entry.name)) {
+      if ((SCAN_EXTENSIONS.has(ext) || SCAN_FILE_NAMES.has(entry.name)) && !SKIP_FILES.has(entry.name)) {
         results.push(path.relative(root, full));
       }
     }

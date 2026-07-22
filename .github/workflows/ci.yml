@@ -7,6 +7,58 @@ on:
     branches: [main]
 
 jobs:
+  pr-metadata:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Require a linked issue and verification result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const issueLink = body.match(/(?:closes|fixes|resolves)\s+#(\d+)\b/i);
+            const verificationSection = body.match(
+              /##\s+Verification evidence \/ results\s*\n([\s\S]*?)(?=\n##\s|\s*$)/i
+            )?.[1] || '';
+            const hasVerification = verificationSection.split('\n').some((line) => {
+              const columns = line.split('|').map((value) => value.trim());
+              return (
+                line.trim().startsWith('|') &&
+                columns.length >= 4 &&
+                columns[1] &&
+                columns[2] &&
+                columns[3] &&
+                !/^[-:]+$/.test(columns[1]) &&
+                !/Command or review/i.test(columns[1]) &&
+                !/Exit status \/ result/i.test(columns[2]) &&
+                !/Evidence or relevant output/i.test(columns[3])
+              );
+            });
+
+            if (!issueLink || !hasVerification) {
+              core.setFailed(
+                'PR body must include a real linked issue (for example, Closes #123) and at least one recorded Verification evidence/results row.'
+              );
+              return;
+            }
+
+            try {
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: Number(issueLink[1]),
+              });
+
+              if (issue.pull_request) {
+                core.setFailed('The linked item must be an issue, not another pull request.');
+              }
+            } catch {
+              core.setFailed(`The linked issue #${issueLink[1]} does not exist or is not accessible.`);
+            }
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -22,6 +74,15 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run deterministic privacy regression
+        run: npm run privacy:regression
+
+      - name: Verify published schema compatibility fixture
+        run: npm run schema:compat
+
+      - name: Run clean-install mock CLI smoke test
+        run: npm run cli:mock
+
       - name: Run structural evals
         run: npm run eval:structural
 
@@ -30,7 +91,7 @@ jobs:
 
       - name: Scan for hardcoded secrets
         run: |
-          if grep -rEn 'sk-[A-Za-z0-9]{20,}' --include='*.mjs' --include='*.js' --include='*.ts' --include='*.json' .; then
+          if grep -rEn 'sk-[A-Za-z0-9]{20,}' --include='*.mjs' --include='*.js' --include='*.ts' --include='*.json' --include='.env.example' .; then
             echo "❌ Hardcoded API key found!"
             exit 1
           fi
@@ -52,7 +113,7 @@ jobs:
             done < "$f"
           done
 
-  eval:
+  optional-live-eval:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
@@ -69,4 +130,4 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: npm run eval
-        continue-on-error: true  # Don't block PRs on eval failures yet
+        continue-on-error: true  # Informational only; deterministic regression checks above are blocking.
