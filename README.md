@@ -354,7 +354,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). We welcome:
 - Translations
 - Bug reports and feature requests
 
-Look for issues labeled [`good first issue`](../../labels/good%20first%20issue) and [`help wanted`](../../labels/help%20wanted).
+Look for issues labeled [good first issue](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/labels/good%20first%20issue) and [help wanted](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/labels/help%20wanted).
 
 ## License
 

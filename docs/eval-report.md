@@ -77,6 +77,9 @@ Follow-up: <issue, PR, release, or not recorded>
 
 ## Current record status
 
-No new result is created by this protocol. Dated historical and local command
-summaries remain in [Application Evidence Pack](application-evidence.md) until
-a corresponding result artifact is recorded under evals/results.
+- [2026-07-23 local gate record](../evals/results/2026-07-23-21c2505-local-gates.md)
+  records actual commands for local commit 21c2505. It is not a remote CI run,
+  live-model evaluation, external beta result, or production-readiness claim.
+- Dated historical summaries remain in
+  [Application Evidence Pack](application-evidence.md). Add a new result file
+  rather than replacing this record when the commands run again.

@@ -5,11 +5,15 @@ It complements the repository-level [readiness evidence ledger](readiness-eviden
 the ledger defines the rules, while this pack records dated, attributable
 evidence for an application.
 
-**As of:** 2026-07-22
+**As of:** 2026-07-23
 
 **Repository:** [ting07081010-ui/moosie-eduops-ai-kit](https://github.com/ting07081010-ui/moosie-eduops-ai-kit)
 
 **Implementation evidence base:** `13aec97` on `chore/readiness-gate` (not pushed or released)
+
+**Current local evidence candidate:** 21c2505 on chore/readiness-gate (not
+pushed or released). It incorporates the earlier 13aec97 runtime-readiness
+work; neither commit is a public release or remote CI result.
 
 ## Evidence rules
 
@@ -52,6 +56,7 @@ evidence for an application.
 | 2026-06-12 | [v0.2.0](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/releases/tag/v0.2.0) | Published GitHub release | **not recorded** in this pack; do not call it feedback-driven without a linked source. | Published timeline only. |
 | 2026-06-13 | [v0.2.1](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/releases/tag/v0.2.1) | Published GitHub release | **not recorded** in this pack; do not call it feedback-driven without a linked source. | Published timeline only. |
 | 2026-07-22 | `13aec97` readiness-gate candidate | Local git commit | Adds deterministic privacy, mock CLI, schema compatibility, PR traceability, and evidence workflows. | Local only; not a public release. |
+| 2026-07-23 | 21c2505 evidence-cycle candidate | Local git commit | Adds mock-first beta and evidence documentation, threat model, eval-result protocol, and contributor onboarding alignment. | Local only; not a public release or feedback-driven change. |
 
 ## Merged pull requests, reviews, and issue triage
 
@@ -95,6 +100,7 @@ for a versioned result file or live-model evaluation.
 | 2026-07-22 | Schema compatibility | 1/1 passed. | `npm run schema:compat` on local commit `13aec97`, using the v0.2.1 synthetic fixture. |
 | Historical regression failures | **not recorded** | No dated failure-and-fix series has been imported into this pack. | Do not calculate a regression rate until failures and reruns have dated sources. |
 | Live-model evaluation | **not recorded** | The live eval remains optional and was not run for this evidence entry. | Do not extrapolate structural results into model-quality pass rate. |
+| 2026-07-23 | Local deterministic gate record | 34/34 repository tests, 34/34 structural fixtures, 4/4 privacy regressions, and 1/1 schema compatibility passed. | [Versioned local record](../evals/results/2026-07-23-21c2505-local-gates.md) on commit 21c2505; no live model or remote CI run. |
 
 ## Clean-install evidence
 
@@ -106,6 +112,9 @@ supporting records under [docs/evidence](evidence/README.md).
 | --- | --- | --- | --- | --- |
 | 2026-07-22 | Isolated macOS worktree, Node.js 22.23.1 | `npm ci --no-audit` | Exit 0; npm reported 91 packages added. | 447 ms reported by npm; cache and machine conditions affect the time, so rerun on a clean CI runner before claiming a cross-environment duration. |
 | 2026-07-22 | Same isolated worktree, no `OPENAI_API_KEY` | `npm run cli:mock` | Exit 0; deterministic fake-data pipeline completed without network access. | This demonstrates the documented local path, not a deployment or live-model test. |
+| 2026-07-23 | Isolated macOS worktree, Node.js 22.23.1 | npm ci --no-audit | Exit 0; 91 packages added, but Husky emitted an operation-not-permitted warning while attempting to lock the shared Git common directory outside this sandbox. | Dependency installation completed; this does not prove hook installation or cross-environment clean-install success. |
+| 2026-07-23 | Same worktree, hook installation intentionally disabled | HUSKY=0 npm ci --no-audit | Exit 0; 91 packages added in 641 ms. | This skips Git-hook installation and the duration is machine/cache dependent; see the [local gate record](../evals/results/2026-07-23-21c2505-local-gates.md). |
+| 2026-07-23 | Same isolated worktree, no OPENAI_API_KEY | npm run cli:mock | Exit 0; deterministic fake-data pipeline completed without network access. | Local-only smoke result on 21c2505, not a deployment or live-model test. |
 
 ## External contributions, forks, and downstream use
 
@@ -127,7 +136,7 @@ supporting records under [docs/evidence](evidence/README.md).
 | --- | --- | --- |
 | Maintainer rules | [`AGENTS.md`](../AGENTS.md) | Local policy; not evidence that a human review occurred. |
 | Codex workflow | [`codex-workflows.md`](codex-workflows.md) | Documents how Codex assists; it does not establish external adoption. |
-| CI policy | [local CI workflow](../.github/workflows/ci.yml) and [GitHub Actions](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions) | Local candidate has not been pushed, so no remote CI run exists for `13aec97`. |
+| CI policy | [local CI workflow](../.github/workflows/ci.yml) and [GitHub Actions](https://github.com/ting07081010-ui/moosie-eduops-ai-kit/actions) | Local candidates have not been pushed, so no remote CI run exists for the recorded local commits. |
 | Required gates | [`privacy-regression` skill](../.agents/skills/privacy-regression/SKILL.md) and [`release-readiness` skill](../.agents/skills/release-readiness/SKILL.md) | Record a command result and CI run URL for each application/release candidate. |
 
 ## Statistics date and data sources
@@ -137,7 +146,7 @@ supporting records under [docs/evidence](evidence/README.md).
 | Repository visibility and permissions | 2026-07-22 | GitHub repository metadata and connected GitHub App read-only query | Recheck before submission and after permission changes. |
 | Releases | 2026-07-22 | Public GitHub release URLs above | Add a row for each release only after publication. |
 | Issue, PR, and review facts | 2026-07-22 | GitHub issue/PR/review URLs above and connected read-only query | Recheck after every merged PR or review. |
-| Local commands and timings | 2026-07-22 | Terminal output on local commit `13aec97` | Re-run for the exact candidate commit; preserve failures as well as passes. |
+| Local commands and timings | 2026-07-22; 2026-07-23 | Terminal output on local commits `13aec97` and `21c2505`, including the versioned local gate record | Re-run for the exact candidate commit; preserve failures as well as passes. |
 | Beta, adoption, external contribution, downstream, upstream | 2026-07-22 | **not recorded** | Add only independently verifiable, consented, and dated sources. |
 
 ## Monthly update entry
