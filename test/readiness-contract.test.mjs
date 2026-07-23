@@ -176,4 +176,31 @@ describe('readiness contract', () => {
     assert.match(result.stdout, /Parent Summary/)
     assert.match(result.stdout, /Risk Check/)
   })
+
+  it('documents the 45-day evidence cycle without making external claims', () => {
+    const requiredPaths = [
+      'docs/45-day-readiness-plan.md',
+      'docs/beta-test-guide.md',
+      'docs/feedback-template.md',
+      'docs/evidence/README.md',
+      'docs/threat-model.md',
+      'docs/eval-report.md',
+      'evals/results/README.md',
+      'CHANGELOG.md',
+      '.github/ISSUE_TEMPLATE/beta-feedback.yml',
+    ]
+
+    const missing = requiredPaths.filter((relativePath) => !fs.existsSync(path.join(ROOT, relativePath)))
+    assert.deepEqual(missing, [])
+
+    const contributing = read('CONTRIBUTING.md')
+    assert.match(contributing, /npm ci/)
+    assert.match(contributing, /npm run cli:mock/)
+    assert.doesNotMatch(contributing, /- \[ \] I ran `npm run eval`/)
+    assert.match(contributing, /optional live evaluation/i)
+
+    const betaGuide = read('docs/beta-test-guide.md')
+    assert.match(betaGuide, /synthetic/i)
+    assert.match(betaGuide, /not recorded/i)
+  })
 })

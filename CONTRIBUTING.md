@@ -27,11 +27,31 @@ This project welcomes practical improvements for small education teams, especial
 ```bash
 git clone https://github.com/ting07081010-ui/moosie-eduops-ai-kit.git
 cd moosie-eduops-ai-kit
-npm install
-cp .env.example .env
+npm ci
+npm run cli:mock
 npm test
+npm run eval:structural
+npm run privacy:regression
+npm run schema:compat
+npm run scan
+```
+
+The default contributor path uses synthetic fixtures, needs no API key, and
+does not contact a model. Do not add a real student or parent record while
+testing.
+
+## Optional Live Evaluation
+
+Live evaluation is not required for a pull request. If a maintainer explicitly
+needs it, create a local, untracked .env from .env.example, add a valid
+OPENAI_API_KEY outside version control, and run:
+
+```bash
 npm run eval
 ```
+
+Record the model, prompt version, date, cost, human review, and limitation in
+the eval evidence. Never paste the key or raw personal data into a PR or issue.
 
 ## Pull Request Checklist
 
@@ -42,8 +62,12 @@ Before opening a PR:
 - [ ] I updated docs if behavior changed
 - [ ] I added or updated eval cases if prompts changed
 - [ ] I ran `npm test`
-- [ ] I ran `npm run eval`
-- [ ] I checked for privacy risks
+- [ ] I ran `npm run eval:structural`
+- [ ] I ran `npm run privacy:regression` for prompt or risk changes
+- [ ] I ran `npm run schema:compat` for schema changes
+- [ ] I ran `npm run cli:mock` for example or onboarding changes
+- [ ] I ran `npm run scan`
+- [ ] I recorded verification evidence in the pull request template
 
 ## Good First Contributions
 

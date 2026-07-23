@@ -25,6 +25,19 @@ policy and scoring reference; do not duplicate event records across both files.
   readiness.
 - Update `as of` dates whenever a numeric count, score, or timeline changes.
 
+## Evidence collection surfaces
+
+- [45-Day Application Readiness Cycle](45-day-readiness-plan.md) is a
+  forward-looking schedule, not evidence that a phase is complete.
+- [Beta Test Guide](beta-test-guide.md) and
+  [Feedback Template](feedback-template.md) collect synthetic-only, consented
+  feedback without making adoption claims.
+- [Evaluation Report Protocol](eval-report.md) and
+  [versioned eval-results guidance](../evals/results/README.md) retain actual
+  command outcomes without overwriting prior failures.
+- [Threat Model](threat-model.md) maps repository controls and their limits; a
+  deployer must still perform a production review.
+
 ## Verified local evidence snapshot
 
 The rows below were checked from the source tree on 2026-07-22. They are not

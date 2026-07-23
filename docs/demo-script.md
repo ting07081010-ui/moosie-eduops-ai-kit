@@ -18,40 +18,44 @@ Point reviewers to:
 ## 2. Run the CLI Demo
 
 ```bash
-npm install
-cp .env.example .env
-npm run cli -- --file examples/fake-data/lesson-input.json
+npm ci
+npm run cli:mock
 ```
 
 Expected reviewer takeaway:
 
-- The demo uses fake lesson data.
+- The demo uses fake lesson data, no API key, and no network model call.
 - The output separates lesson record, parent summary, admin tasks, and risk
   checks.
 - A teacher remains the approval gate.
 
-## 3. Show Batch Processing
-
-```bash
-npm run cli -- --input-dir examples/fake-data
-```
-
-Expected reviewer takeaway:
-
-- The workflow can process multiple fake lesson records.
-- It is still bounded to education workflow output, not business-system data.
-
-## 4. Run Structural Evals
+## 3. Show Deterministic Safety and Eval Gates
 
 ```bash
 npm run eval:structural
+npm run privacy:regression
+npm run schema:compat
+npm run scan
 ```
 
 Expected reviewer takeaway:
 
-- Evals exist and can be inspected without live model calls.
-- The rubric checks clarity, specificity, non-overclaiming, privacy safety,
-  actionability, and tone.
+- Structural fixtures, privacy regression, schema compatibility, and PII scan
+  are deterministic local checks.
+- A passing check has a stated scope; it does not prove production safety or
+  external adoption.
+
+## 4. Optional Live and Batch Paths
+
+Live model calls are not part of the three-minute demo. A maintainer may
+configure a local, untracked .env and run the documented live CLI or eval path
+only with synthetic, pre-de-identified input. Batch processing also requires
+mock mode or a configured model; do not present it as a no-key default.
+
+Expected reviewer takeaway:
+
+- The clean-install demonstration is mock-first.
+- Live output requires additional model, privacy, and human-review controls.
 
 ## 5. Show the LINE Demo Scope
 
@@ -62,3 +66,5 @@ Expected reviewer takeaway:
 - The LINE demo supports `/summary`, `/risk`, and `/task`.
 - CRM, tuition payment, scheduling, grade management, and identity records are
   intentionally out of scope.
+- The reference adapter is not a production delivery channel and cannot bypass
+  human approval.

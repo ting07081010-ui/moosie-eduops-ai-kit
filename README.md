@@ -234,6 +234,20 @@ npm run schema:compat
 npm test
 ```
 
+## Readiness and beta evidence
+
+This repository separates future plans from dated evidence. The mock-first
+baseline can be verified locally; beta, adoption, reviewer, and downstream
+claims remain unrecorded until a consented, dated source exists.
+
+- [45-Day Application Readiness Cycle](docs/45-day-readiness-plan.md)
+- [Beta Test Guide](docs/beta-test-guide.md)
+- [Beta Feedback Template](docs/feedback-template.md)
+- [Application Evidence Pack](docs/application-evidence.md)
+
+The LINE material remains a non-production reference and parent-facing content
+requires human approval in the deploying system.
+
 ## Project Status
 
 Current version: 0.2.1

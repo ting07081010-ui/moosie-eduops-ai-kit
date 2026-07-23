@@ -1,0 +1,48 @@
+name: Beta feedback
+description: Report a synthetic mock-first test result without including real student or parent data.
+title: "[Beta feedback]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic fixtures only. Do not include personal data, school identifiers, raw parent messages, screenshots with identifiers, API keys, or tokens. Submitting this form is intake, not automatic external-evidence status.
+  - type: checkboxes
+    id: synthetic_data
+    attributes:
+      label: Synthetic data confirmation
+      options:
+        - label: I confirm that this report uses only repository-provided or independently created synthetic data and contains no real student, parent, teacher, school, or credential data.
+          required: true
+  - type: dropdown
+    id: setup_outcome
+    attributes:
+      label: Setup outcome
+      options:
+        - Completed clean mock-first path
+        - Completed with friction
+        - Blocked before first mock output
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: findings
+    attributes:
+      label: Anonymous findings
+      description: Include the most confusing step, the most useful output, and any redacted error summary.
+    validations:
+      required: true
+  - type: dropdown
+    id: public_summary_consent
+    attributes:
+      label: Consent to a public anonymous summary
+      options:
+        - Yes, anonymous summary is allowed
+        - No, keep this report private
+    validations:
+      required: true
+  - type: input
+    id: follow_up_url
+    attributes:
+      label: Related issue, PR, release, or public use-case URL
+      description: Optional. Leave blank when no linked public record exists.

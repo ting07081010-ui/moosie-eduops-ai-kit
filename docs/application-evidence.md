@@ -22,6 +22,19 @@ evidence for an application.
 - Refresh the `As of` date whenever a count, permission, release, or status
   changes.
 
+## Evidence collection protocol
+
+- [45-Day Application Readiness Cycle](45-day-readiness-plan.md) separates
+  future work from historical evidence.
+- [Beta Test Guide](beta-test-guide.md) and
+  [Feedback Template](feedback-template.md) define the synthetic-only intake
+  path; a submitted template is not adoption evidence by itself.
+- [Evaluation Report Protocol](eval-report.md) and
+  [versioned result records](../evals/results/README.md) define how to retain
+  reproducible command evidence after it actually runs.
+- [Threat Model](threat-model.md) documents implemented controls and residual
+  risk. It is not a production deployment approval.
+
 ## Maintainer role and repository control
 
 | Item | Evidence | Status and limit |
@@ -70,6 +83,10 @@ Follow-up status: triaged | fixed | deferred | not reproducible
 
 ## Eval coverage, pass rate, and regression history
 
+Use the [Evaluation Report Protocol](eval-report.md) for new dated artifacts.
+The following rows are an index of existing local evidence, not a substitute
+for a versioned result file or live-model evaluation.
+
 | As of | Scope | Result | Source and interpretation |
 | --- | --- | --- | --- |
 | 2026-07-22 | Structural eval fixtures | 34/34 valid (100%): 10 parent-message, 12 privacy-risk, 3 progress-diagnosis, 6 quality, 3 irregular-verb cases. | `npm run eval:structural` on local commit `13aec97`; validates fixture structure, not live-model output quality. |
@@ -80,6 +97,10 @@ Follow-up status: triaged | fixed | deferred | not reproducible
 | Live-model evaluation | **not recorded** | The live eval remains optional and was not run for this evidence entry. | Do not extrapolate structural results into model-quality pass rate. |
 
 ## Clean-install evidence
+
+For future non-author results, use the synthetic-only
+[Beta Test Guide](beta-test-guide.md) and retain only consented, anonymized
+supporting records under [docs/evidence](evidence/README.md).
 
 | As of | Environment | Command | Result | Duration and limit |
 | --- | --- | --- | --- | --- |
