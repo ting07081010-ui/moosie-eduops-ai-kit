@@ -475,7 +475,7 @@ app.get("/health", (_req, res) => {
 const cfg = validateConfig();
 if (!cfg.ok) {
   console.warn(`⚠️  Missing config: ${cfg.missing.join(", ")}`);
-  console.warn("   Some features may not work without OPENAI_API_KEY");
+  console.warn(`   Some features may not work without ${cfg.missing.join(", ")}`);
 }
 
 app.listen(PORT, () => {

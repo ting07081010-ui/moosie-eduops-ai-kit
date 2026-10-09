@@ -62,7 +62,7 @@ const PII_PATTERNS = [
     severity: "medium",
     description: "LINE ID",
     // Exclude common code patterns (@import, @param, etc.)
-    excludeIf: (match) => /^@(import|param|returns?|type|see|deprecated|override|inheritdoc|link|example|since|version|author|throws|enum|default|namespace|module|public|private|protected|readonly|abstract|static|async|await|yield|from|as|of|in|for|if|else|while|do|switch|case|break|continue|return|throw|try|catch|finally|new|delete|typeof|instanceof|void|null|undefined|true|false|this|super|class|extends|implements|interface|type|const|let|var|function|username|moosie|teacher|parent|student|admin|=>)/.test(match),
+    excludeIf: (match) => /^@(import|param|returns?|type|see|deprecated|override|inheritdoc|link|example|since|version|author|throws|enum|default|namespace|module|public|private|protected|readonly|abstract|static|async|await|yield|from|as|of|in|for|if|else|while|do|switch|case|break|continue|return|throw|try|catch|finally|new|delete|typeof|instanceof|void|null|undefined|true|false|this|super|class|extends|implements|interface|type|const|let|var|function|username|moosie|teacher|parent|student|admin|anthropic-ai|=>)/.test(match),
   },
   {
     name: "ZH_NAME",

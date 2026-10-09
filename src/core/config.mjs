@@ -2,6 +2,8 @@
  * Core configuration — shared across all adapters.
  */
 
+import { resolveProvider } from "./provider.mjs";
+
 export const config = {
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
@@ -22,6 +24,10 @@ export const config = {
  */
 export function validateConfig() {
   const missing = [];
-  if (!config.openai.apiKey) missing.push("OPENAI_API_KEY");
+  if (resolveProvider() === "claude") {
+    if (!process.env.ANTHROPIC_API_KEY) missing.push("ANTHROPIC_API_KEY");
+  } else if (!config.openai.apiKey) {
+    missing.push("OPENAI_API_KEY");
+  }
   return { ok: missing.length === 0, missing };
 }
