@@ -190,6 +190,14 @@ Evals cover:
 
 Pass threshold: total >= 10/12 AND privacy safety == 2.
 
+`npm run eval` runs the parent-message and privacy-risk sets live against the selected provider (Claude when `ANTHROPIC_API_KEY` is set). Add `--report <file>` to save a JSON report with the provider, model, date, and per-case results:
+
+```bash
+npm run eval -- --report evals/reports/latest.json
+```
+
+`npm run eval:structural` checks the eval files without calling a model; CI runs this one.
+
 See [evals/output-quality-rubric.md](evals/output-quality-rubric.md).
 
 ## Maintainer Workflows
@@ -242,6 +250,7 @@ Claude is integrated as a provider. The pilot is in progress: the existing promp
 | `AI_PROVIDER` | `claude` or `openai`. Optional. |
 | `ANTHROPIC_API_KEY` | Claude API key. Never commit it. |
 | `ANTHROPIC_MODEL` | Claude model id. Defaults to `claude-sonnet-5-5`. |
+| `ANTHROPIC_RISK_MODEL` | Optional cheaper Claude model for the parent-message risk check only. Defaults to `ANTHROPIC_MODEL`. |
 | `OPENAI_API_KEY` | Existing OpenAI key. |
 | `MODEL` | Existing OpenAI model. Defaults to `gpt-4o-mini`. |
 
@@ -259,6 +268,20 @@ npm run demo
 ```
 
 The demo reads `examples/fake-data/classroom-observation.json` and prints two drafts: a parent-friendly progress report, and a level-matched project activity. `--dry-run` (or `--mock`) prints a fixed sample and does not call a model.
+
+Prompt caching: the Claude path marks the shared system prompt (rules and schema) with `cache_control`, so repeated drafts reuse it. Prompts shorter than the model's minimum cacheable length are not cached. The Anthropic SDK retries rate-limit (429) and server errors on its own.
+
+### Human approval gate
+
+No parent-facing message can be sent without a teacher or admin approving it. Drafts start as `pending`; only a draft returned by `approveDraft()` can produce outgoing text, and a draft the risk check marked `block` cannot be approved. Tests in `test/approval-gate.test.mjs` check that the gate cannot be skipped.
+
+```js
+import { createDraft, approveDraft, outgoingText } from "./src/core/index.mjs";
+
+const draft = createDraft(text, { studentCode: "S-001", riskVerdict: risk.verdict });
+const approved = approveDraft(draft, { approvedBy: "teacher" }); // a person, never the model
+send(outgoingText(approved)); // throws for anything not approved
+```
 
 Privacy: real student data should be de-identified before sending to any model, Claude or otherwise. Use codes such as `S-001`. Do not send names, phone numbers, addresses, school names, or parent contact details. See [PRIVACY.md](./PRIVACY.md).
 

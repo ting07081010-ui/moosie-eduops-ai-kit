@@ -35,7 +35,10 @@ const SYSTEM_PROMPT = fs.readFileSync(PROMPT_PATH, "utf8");
  */
 export async function checkParentMessageRisk(draft, lessonRecord = {}) {
   const input = { draft, lessonRecord };
-  const report = await callLLMJson(SYSTEM_PROMPT, JSON.stringify(input));
+  // ANTHROPIC_RISK_MODEL lets the risk check use a cheaper Claude tier.
+  const report = await callLLMJson(SYSTEM_PROMPT, JSON.stringify(input), {
+    model: process.env.ANTHROPIC_RISK_MODEL || undefined,
+  });
 
   // Ensure verdict is computed (don't trust LLM's verdict logic)
   report.verdict = computeVerdict(report);

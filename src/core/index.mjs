@@ -16,3 +16,4 @@ export { config, validateConfig } from "./config.mjs";
 export { callLLM, callLLMJson, callLLMJsonValidated, extractJson } from "./llm.mjs";
 export { resolveProvider, completeWithClaude, claudeModel, DEFAULT_CLAUDE_MODEL } from "./provider.mjs";
 export { runQualityGate } from "./quality-gate.mjs";
+export { createDraft, approveDraft, outgoingText } from "./approval-gate.mjs";

@@ -74,7 +74,9 @@ describe("Claude adapter", () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].model, "claude-sonnet-5-5");
     assert.equal(calls[0].max_tokens, 4096);
-    assert.equal(calls[0].system, "system prompt");
+    assert.deepEqual(calls[0].system, [
+      { type: "text", text: "system prompt", cache_control: { type: "ephemeral" } },
+    ]);
     assert.deepEqual(calls[0].messages, [
       { role: "user", content: JSON.stringify({ studentCode: "S-001" }) },
     ]);
