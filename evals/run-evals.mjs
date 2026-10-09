@@ -7,7 +7,8 @@
  *
  * Usage:
  *   node evals/run-evals.mjs                    # structural validation (no API)
- *   node evals/run-evals.mjs --live              # live eval with OpenAI API
+ *   node evals/run-evals.mjs --live              # live eval (Claude if ANTHROPIC_API_KEY, else OpenAI)
+ *   node evals/run-evals.mjs --live --report evals/reports/latest.json
  *   node evals/run-evals.mjs --set parent-message
  *   node evals/run-evals.mjs --set privacy-risk
  *   node evals/run-evals.mjs --set all (default)
@@ -16,6 +17,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { callLLM } from "../src/core/llm.mjs";
+import { validateConfig } from "../src/core/config.mjs";
+import { resolveProvider, claudeModel } from "../src/core/provider.mjs";
+import { checkParentMessageRisk } from "../src/core/check-parent-message-risk.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -322,31 +327,10 @@ function validateFakeData() {
   return allValid;
 }
 
-// ── Live Eval (requires OPENAI_API_KEY) ──
+// ── Live Eval (Claude or OpenAI, via the core provider switch) ──
 
 async function ask(systemPrompt, userPayload) {
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  const MODEL = process.env.MODEL || "gpt-4o-mini";
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: typeof userPayload === "string" ? userPayload : JSON.stringify(userPayload) },
-      ],
-      temperature: 0.3,
-    }),
-  });
-
-  if (!response.ok) throw new Error(`API error ${response.status}: ${await response.text()}`);
-  const data = await response.json();
-  return data.choices[0].message.content.trim();
+  return callLLM(systemPrompt, userPayload, { temperature: 0.3 });
 }
 
 function loadPrompt(relativePath) {
@@ -410,6 +394,32 @@ async function runLiveParentMessageEvals() {
   return results;
 }
 
+async function runLivePrivacyRiskEvals() {
+  const cases = loadJsonl("evals/privacy-risk-eval.jsonl");
+  const results = [];
+
+  console.log("\n🔒 Privacy Risk Evals (Live)");
+  console.log("─".repeat(60));
+
+  for (const tc of cases) {
+    const report = await checkParentMessageRisk(tc.draft ?? JSON.stringify(tc.input));
+    const checks = {};
+    for (const [key, expected] of Object.entries(tc.expect)) {
+      checks[key] = { expected, actual: report[key], pass: report[key] === expected };
+    }
+    const allPass = Object.values(checks).every((c) => c.pass);
+    console.log(`${allPass ? "✅" : "❌"} ${tc.id}: verdict=${report.verdict}`);
+    for (const [key, val] of Object.entries(checks)) {
+      if (!val.pass) console.log(`   ✗ ${key}: expected=${val.expected}, got=${val.actual}`);
+    }
+    results.push({ id: tc.id, pass: allPass, verdict: report.verdict, checks });
+  }
+
+  const passed = results.filter((r) => r.pass).length;
+  console.log(`\n📊 Privacy Risk: ${passed}/${results.length} passed`);
+  return results;
+}
+
 // ── Main ──
 
 async function main() {
@@ -418,19 +428,25 @@ async function main() {
   const set = setArg !== -1 ? process.argv[setArg + 1] : "all";
 
   console.log("🧪 Moosie EduOps AI Kit — Eval Runner");
-  console.log(`   Mode: ${liveMode ? "live (OpenAI API)" : "structural validation"}`);
+  const provider = liveMode ? resolveProvider() : null;
+  const model = provider === "claude" ? claudeModel() : process.env.MODEL || "gpt-4o-mini";
+  console.log(`   Mode: ${liveMode ? `live (${provider}, ${model})` : "structural validation"}`);
   console.log(`   Set: ${set}`);
 
   const results = {};
 
   if (liveMode) {
     // Live mode requires API key
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("\n❌ OPENAI_API_KEY not set. Use structural mode or set key in .env");
+    const cfg = validateConfig();
+    if (!cfg.ok) {
+      console.error(`\n❌ ${cfg.missing.join(", ")} not set. Use structural mode or set the key in .env`);
       process.exit(1);
     }
     if (set === "all" || set === "parent-message") {
       results.parentMessage = await runLiveParentMessageEvals();
+    }
+    if (set === "all" || set === "privacy-risk") {
+      results.privacyRisk = await runLivePrivacyRiskEvals();
     }
   } else {
     // Structural validation mode (no API needed)
@@ -486,6 +502,23 @@ async function main() {
   }
 
   console.log(`\n  Overall: ${allPass ? "✅ ALL PASSED" : "❌ SOME FAILED"}`);
+
+  const reportArg = process.argv.indexOf("--report");
+  if (reportArg !== -1 && process.argv[reportArg + 1]) {
+    const out = path.resolve(process.cwd(), process.argv[reportArg + 1]);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    const report = {
+      generatedAt: new Date().toISOString(),
+      mode: liveMode ? "live" : "structural",
+      provider,
+      model: liveMode ? model : null,
+      set,
+      allPass,
+      results,
+    };
+    fs.writeFileSync(out, JSON.stringify(report, null, 2) + "\n");
+    console.log(`  Report written to ${path.relative(process.cwd(), out)}`);
+  }
   process.exit(allPass ? 0 : 1);
 }
 

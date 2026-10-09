@@ -52,6 +52,9 @@ export function textFromClaudeMessage(message) {
 /**
  * Call the official Anthropic SDK Messages API.
  * Temperature is omitted: Claude 4.7 and later reject a non-default temperature.
+ * The system prompt is marked for prompt caching. Prompts below the model's
+ * minimum cacheable length are simply not cached.
+ * The SDK retries 429 and 5xx responses on its own (maxRetries, default 2).
  *
  * @param {string} systemPrompt
  * @param {string|object} userPayload
@@ -64,7 +67,8 @@ export async function completeWithClaude(systemPrompt, userPayload, opts = {}) {
   const message = await client.messages.create({
     model: opts.model || claudeModel(),
     max_tokens: opts.maxTokens ?? 4096,
-    system: systemPrompt,
+    // Cache the shared system prompt (rules + schema) across calls.
+    system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: user }],
   });
   const text = textFromClaudeMessage(message);
