@@ -83,6 +83,16 @@ Supported demo commands:
 - `/risk`
 - `/task`
 
+### 5. Provider Demo (no API key)
+
+Use this when you want to see the two pilot workflows on fake classroom data.
+
+```bash
+npm run demo -- --dry-run
+```
+
+`--mock` is the same offline mode. With a key set, `npm run demo` calls the selected provider. See [Built with Claude](#built-with-claude).
+
 ---
 
 ## Example Output
@@ -203,7 +213,10 @@ npm install
 
 # Configure
 cp .env.example .env
-# Edit .env and add your OPENAI_API_KEY
+# Edit .env and add ANTHROPIC_API_KEY, or OPENAI_API_KEY if you stay on OpenAI
+
+# Offline provider demo (fake data, no API key)
+npm run demo -- --dry-run
 
 # Run CLI demo
 npm run cli -- --file examples/fake-data/lesson-input.json
@@ -217,6 +230,37 @@ npm run eval
 # Run tests
 npm test
 ```
+
+## Built with Claude
+
+Claude is integrated as a provider. The pilot is in progress: the existing prompts, schemas, and evals still run through the same caller, and live Claude output quality is still being reviewed against the rubric. This is not a finished Claude-only product.
+
+`AI_PROVIDER=claude|openai` selects the provider. If `AI_PROVIDER` is unset, the kit uses Claude when `ANTHROPIC_API_KEY` is set, and otherwise keeps the previous OpenAI behavior (`OPENAI_API_KEY`, model `gpt-4o-mini` unless `MODEL` is set).
+
+| Variable | Purpose |
+|---|---|
+| `AI_PROVIDER` | `claude` or `openai`. Optional. |
+| `ANTHROPIC_API_KEY` | Claude API key. Never commit it. |
+| `ANTHROPIC_MODEL` | Claude model id. Defaults to `claude-sonnet-5-5`. |
+| `OPENAI_API_KEY` | Existing OpenAI key. |
+| `MODEL` | Existing OpenAI model. Defaults to `gpt-4o-mini`. |
+
+Offline demo, safe for CI and review:
+
+```bash
+npm install
+npm run demo -- --dry-run
+```
+
+Live demo, after `cp .env.example .env` and a real key:
+
+```bash
+npm run demo
+```
+
+The demo reads `examples/fake-data/classroom-observation.json` and prints two drafts: a parent-friendly progress report, and a level-matched project activity. `--dry-run` (or `--mock`) prints a fixed sample and does not call a model.
+
+Privacy: real student data should be de-identified before sending to any model, Claude or otherwise. Use codes such as `S-001`. Do not send names, phone numbers, addresses, school names, or parent contact details. See [PRIVACY.md](./PRIVACY.md).
 
 ## Project Status
 

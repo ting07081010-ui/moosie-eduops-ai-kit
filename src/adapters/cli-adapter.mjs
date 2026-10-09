@@ -32,7 +32,11 @@ function validateRuntimeConfig() {
   const cfg = validateConfig();
   if (!cfg.ok) {
     console.error(`❌ Missing config: ${cfg.missing.join(", ")}`);
-    console.error("   Copy .env.example to .env and add your OPENAI_API_KEY");
+    if (cfg.missing.includes("ANTHROPIC_API_KEY") && !cfg.missing.includes("OPENAI_API_KEY")) {
+      console.error("   Copy .env.example to .env and add your ANTHROPIC_API_KEY");
+    } else {
+      console.error("   Copy .env.example to .env and add your OPENAI_API_KEY");
+    }
     process.exit(1);
   }
 }

@@ -10,6 +10,7 @@
  */
 
 import { config } from "./config.mjs";
+import { completeWithClaude, resolveProvider } from "./provider.mjs";
 
 /**
  * Call the LLM with a system prompt and user payload.
@@ -22,10 +23,18 @@ import { config } from "./config.mjs";
  */
 export async function callLLM(systemPrompt, userPayload, opts = {}) {
   const { temperature = 0.2, maxRetries = 2 } = opts;
+  const provider = opts.provider ?? resolveProvider();
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      if (provider === "claude") {
+        return await completeWithClaude(systemPrompt, userPayload, {
+          client: opts.anthropicClient,
+          model: opts.model,
+        });
+      }
+
       const response = await fetch(`${config.openai.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
