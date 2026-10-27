@@ -1,0 +1,23 @@
+[
+  {
+    "studentCode": "S-007",
+    "nickname": "Sunny",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-008",
+    "nickname": "Cloud",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-009",
+    "nickname": "River",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "privacyNote": "Synthetic demo student. No real student data."
+  }
+]

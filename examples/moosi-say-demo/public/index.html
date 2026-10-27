@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moosi 說 · 課後學習圖卡示範</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: sans-serif; margin: 0; background: #f4f1ea; color: #2b2b2b; }
+  header { background: #2f6b4f; color: #fff; padding: 16px 20px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 6px 0 0; font-size: 13px; color: #dcefe2; }
+  main { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 16px; max-width: 1080px; margin: 0 auto; }
+  @media (min-width: 900px) { main { grid-template-columns: 1fr 1fr; } }
+  .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .notice { background: #fff8e6; border: 1px solid #e8a13d; border-radius: 12px; padding: 12px 16px; font-size: 13px; }
+  label { display: block; font-weight: 700; margin: 12px 0 6px; font-size: 14px; }
+  select, textarea, button { font-size: 15px; }
+  select, textarea { width: 100%; box-sizing: border-box; border: 1px solid #bbb; border-radius: 8px; padding: 8px; }
+  textarea { min-height: 130px; line-height: 1.6; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button { background: #2f6b4f; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+  button.secondary { background: #fff; color: #2f6b4f; border: 1px solid #2f6b4f; }
+  button:disabled { opacity: .5; cursor: default; }
+  #preview img { width: 100%; max-width: 430px; aspect-ratio: 4 / 5; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
+  #status { font-weight: 700; }
+  #hash { font-family: monospace; font-size: 12px; word-break: break-all; }
+  pre { background: #f6f6f6; border-radius: 8px; padding: 10px; overflow: auto; font-size: 12px; max-height: 320px; }
+  #error { color: #a33; font-size: 14px; white-space: pre-wrap; }
+  .hint { font-size: 12px; color: #666; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Moosi 說 · 課後學習圖卡示範 (DEMO)</h1>
+  <p>打字逐字稿 → 課綱限定草稿 → 老師預覽 → 雜湊綁定核准。本機示範，不會實際傳送。</p>
+</header>
+<main>
+  <section class="card">
+    <div class="notice" id="notices">載入中…</div>
+    <label for="student">學生（請從名單選擇，不手動輸入姓名）</label>
+    <select id="student"></select>
+    <div class="hint" id="unitInfo"></div>
+    <label for="transcript">老師課後文字紀錄（打字逐字稿，不是語音辨識）</label>
+    <textarea id="transcript"></textarea>
+    <div class="row">
+      <button id="sampleBtn" class="secondary" type="button">載入水果課範例</button>
+      <button id="draftBtn" type="button">產生草稿預覽</button>
+    </div>
+    <div id="error"></div>
+  </section>
+  <section class="card" id="preview">
+    <h2 style="margin-top:0">草稿預覽（4:5）</h2>
+    <p>狀態：<span id="status">尚未產生草稿</span></p>
+    <p class="hint">內容雜湊 (SHA-256)：<span id="hash">—</span></p>
+    <img id="cardImg" alt="圖卡預覽" hidden>
+    <pre id="cardJson" hidden></pre>
+    <label for="approver">核准身份（獨立步驟，AI 不能核准）</label>
+    <select id="approver">
+      <option value="teacher">老師</option>
+      <option value="admin">管理員</option>
+    </select>
+    <div class="row">
+      <button id="approveBtn" type="button" disabled>核准此版本</button>
+    </div>
+    <p class="hint">核准會綁定上方雜湊；內容被修改或雜湊不符就無法核准。核准只更新本地狀態，不會傳送給家長。</p>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let current = null;
+
+async function loadContext() {
+  const res = await fetch("/api/context");
+  const ctx = await res.json();
+  $("student").innerHTML = ctx.students
+    .map((s) => `<option value="${s.studentCode}">${s.studentCode} · ${s.nickname} · ${s.level} · ${s.unit}</option>`)
+    .join("");
+  $("unitInfo").textContent =
+    `單元：${ctx.unit.title} ${ctx.unit.topicLabel}｜單字：${ctx.unit.words.join(", ")}｜句型：${ctx.unit.sentencePatterns.join(" ")}`;
+  $("transcript").value = ctx.sampleTranscript;
+  $("notices").innerHTML = ctx.notices.map((n) => `<div>· ${n}</div>`).join("");
+}
+
+function showError(obj) {
+  $("error").textContent = obj?.error
+    ? `錯誤 [${obj.error.code}] ${obj.error.message}`
+    : "發生未知錯誤。";
+}
+
+$("sampleBtn").addEventListener("click", async () => {
+  const res = await fetch("/api/context");
+  const ctx = await res.json();
+  $("transcript").value = ctx.sampleTranscript;
+  $("error").textContent = "";
+});
+
+$("draftBtn").addEventListener("click", async () => {
+  $("error").textContent = "";
+  $("approveBtn").disabled = true;
+  const res = await fetch("/api/drafts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      studentCode: $("student").value,
+      transcript: $("transcript").value,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showError(data); return; }
+  current = data;
+  $("status").textContent = `待核准（${data.id}）`;
+  $("hash").textContent = data.contentHash;
+  $("cardImg").src = `/api/drafts/${data.id}/card.svg`;
+  $("cardImg").hidden = false;
+  $("cardJson").textContent = JSON.stringify(data.card, null, 2);
+  $("cardJson").hidden = false;
+  $("approveBtn").disabled = false;
+});
+
+$("approveBtn").addEventListener("click", async () => {
+  if (!current) return;
+  $("error").textContent = "";
+  const res = await fetch(`/api/drafts/${current.id}/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contentHash: current.contentHash,
+      approvedBy: $("approver").value,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showError(data); return; }
+  current = data;
+  $("status").textContent = `已核准（${data.id}，${data.approvedBy}）· 本地示範狀態，未傳送`;
+});
+
+loadContext();
+</script>
+</body>
+</html>
