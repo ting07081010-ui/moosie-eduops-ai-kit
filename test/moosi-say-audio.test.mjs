@@ -420,28 +420,72 @@ async function syntheticUi(request) {
 }
 
 describe("moosi-say audio: offline UI source-version safety", () => {
-  it("invalidates old approval on upload start and ignores audio response after text edits", async () => {
+  async function assertLateAudioResponseIgnored({ change, expectedStudent, expectedTranscript, expectedStatus }) {
     const response = deferred();
     const started = deferred();
+    let transcriptionRequests = 0;
     const ui = await syntheticUi((url) => {
       assert.equal(url, "/api/voice/transcribe");
+      transcriptionRequests++;
       started.resolve();
       return response.promise;
     });
+    ui.element("transcript").value = "initial synthetic teacher note";
     ui.selectSyntheticFile();
     ui.element("approveBtn").disabled = false;
     ui.element("cardImg").hidden = false;
+    ui.element("cardImg").src = "/api/drafts/D-OLD/card.svg";
+    ui.element("cardJson").hidden = false;
+    ui.element("cardJson").textContent = "old preview";
+    ui.element("hash").textContent = "old-preview-hash";
     const upload = ui.fire("voiceBtn", "click");
     assert.equal(ui.element("approveBtn").disabled, true);
     assert.equal(ui.element("cardImg").hidden, true);
     await started.promise;
-    ui.element("transcript").value = "new synthetic teacher edit";
-    ui.fire("transcript", "input");
+
+    change(ui);
     response.resolve(uiReply({ transcript: "stale mock", transcriptionIsMock: true, sendsMessages: false, normalization: normalized.meta, warning: "mock" }));
     await upload;
-    assert.equal(ui.element("transcript").value, "new synthetic teacher edit");
+
+    assert.equal(ui.element("student").value, expectedStudent);
+    assert.equal(ui.element("transcript").value, expectedTranscript);
+    assert.equal(ui.element("status").textContent, expectedStatus);
+    assert.equal(ui.element("hash").textContent, "—");
+    assert.equal(ui.element("cardImg").hidden, true);
+    assert.equal(ui.element("cardImg").src, undefined);
+    assert.equal(ui.element("cardJson").hidden, true);
+    assert.equal(ui.element("cardJson").textContent, "");
     assert.equal(ui.element("approveBtn").disabled, true);
+    assert.equal(ui.element("voiceMeta").textContent, "");
+    assert.equal(ui.element("voiceWarn").textContent, "");
     assert.equal(ui.element("voiceBtn").disabled, false);
+
+    await ui.fire("approveBtn", "click");
+    assert.equal(transcriptionRequests, 1, "late audio response must not trigger another request");
+  }
+
+  it("keeps the edited transcript and blocks stale approval after a late audio response", async () => {
+    await assertLateAudioResponseIgnored({
+      change: (ui) => {
+        ui.element("transcript").value = "new synthetic teacher edit";
+        ui.fire("transcript", "input");
+      },
+      expectedStudent: "S-007",
+      expectedTranscript: "new synthetic teacher edit",
+      expectedStatus: "逐字稿已變更，請重新產生草稿",
+    });
+  });
+
+  it("keeps the newly selected student and blocks stale approval after a late audio response", async () => {
+    await assertLateAudioResponseIgnored({
+      change: (ui) => {
+        ui.element("student").value = "S-008";
+        ui.fire("student", "change");
+      },
+      expectedStudent: "S-008",
+      expectedTranscript: "initial synthetic teacher note",
+      expectedStatus: "學生已變更，請重新產生草稿",
+    });
   });
 
   it("never enables approval from a pending draft after the selected student changes", async () => {
