@@ -18,7 +18,7 @@ With this kit, you can prototype:
 - Student progress data → learner profile
 - Teacher/admin message → task routing
 - Parent message → privacy and overclaiming risk check
-- LINE bot command → summary / risk / task workflow
+- LINE bot → lesson-note workflow with quick replies or a separate slash-command demo
 - Prompt output → eval scoring and safety check
 
 ## Why This Exists
@@ -73,15 +73,42 @@ Use this when you want to check output quality and privacy risk.
 npm run eval
 ```
 
-### 4. LINE Webhook Demo
+### 4. LINE Webhook Demos
 
-Use this when you want to test a lightweight LINE bot workflow.
+These are two separate webhook servers with different input routes. Configure
+`OPENAI_API_KEY`, `LINE_CHANNEL_ACCESS_TOKEN`, and `LINE_CHANNEL_SECRET` in the
+project-root `.env` file before starting either one.
 
-Supported demo commands:
+#### Full quick-reply integration
 
-- `/summary`
-- `/risk`
-- `/task`
+Start the core lesson-note pipeline and its five LINE quick-reply actions:
+
+```bash
+npm run line:quick-reply
+```
+
+Send a teacher lesson note as ordinary text, then use the bot's quick replies
+(`generate_summary`, `check_risk`, `extract_tasks`, `generate_practice`, and
+`list_yellow_students`). This server does **not** implement `/summary`, `/risk`,
+or `/task` slash commands. A slash-prefixed message receives guidance instead
+of being treated as lesson input. The existing `npm run line` command remains
+an alias for `npm run line:quick-reply`.
+
+#### Slash-command demo
+
+Start the lightweight prompt demo that accepts these LINE text commands:
+
+- `/summary {json}` — generate a parent weekly summary
+- `/risk <text>` — check a draft message for privacy and communication risks
+- `/task {json}` — extract action items from lesson notes
+
+```bash
+npm run line:slash-demo
+```
+
+Unknown slash commands and other text receive the command guide; they are not
+sent to the model. The existing `npm run line:demo` command remains an alias for
+`npm run line:slash-demo`. See the [slash-command demo guide](examples/line-webhook-demo/README.md).
 
 ### 5. Provider Demo (no API key)
 
@@ -166,7 +193,7 @@ moosie-eduops-ai-kit/
 │   └── task.schema.json
 ├── examples/
 │   ├── teacher-note-cli/       # CLI demo (Node.js)
-│   ├── line-webhook-demo/      # LINE bot demo
+│   ├── line-webhook-demo/      # LINE slash-command demo
 │   └── fake-data/              # De-identified samples
 ├── evals/                      # Eval sets + rubric + runner
 ├── workflows/                  # Maintainer workflow docs
@@ -212,6 +239,8 @@ This repo documents AI-assisted maintainer workflows for privacy-aware education
 | [Security Review](workflows/security-review.md) | Hardcoded keys, minors-data risks, unsafe workflow patterns |
 
 ## Quick Start
+
+Requires Node.js `20.12.0+` (Node 20), `21.7.0+` (Node 21), or Node 22+. Environment-dependent npm commands automatically load the project-root `.env` file before application modules initialize; values already set in the shell take precedence.
 
 ```bash
 # Clone & install

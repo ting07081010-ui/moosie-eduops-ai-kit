@@ -1,0 +1,11 @@
+{
+  "level": "Beginner",
+  "unit": "Unit 5",
+  "title": "Unit 5",
+  "topic": "fruit",
+  "topicLabel": "水果",
+  "words": ["apple", "banana", "grapes"],
+  "sentencePatterns": ["I want some {fruit}, please."],
+  "phonicsFocus": ["initial g in grapes"],
+  "notes": "Allowlist for the Moosi Say offline demo. Every English word on a card must come from this file."
+}

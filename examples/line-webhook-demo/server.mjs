@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * LINE Bot Demo — Moosie EduOps AI Kit
+ * LINE Slash-Command Demo — Moosie EduOps AI Kit
  *
  * Three commands only:
  *   /summary <json>  — Generate parent weekly summary
@@ -11,54 +11,59 @@
  * Setup:
  *   1. Set LINE_CHANNEL_ACCESS_TOKEN and LINE_CHANNEL_SECRET in .env
  *   2. Set webhook URL in LINE Developers Console to https://your-domain/webhook
- *   3. npm run line
+ *   3. npm run line:slash-demo
  */
 
 import express from "express";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { verifyLineSignature } from "../../src/adapters/line-signature.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
-
 const PORT = process.env.PORT || 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
-const MODEL = process.env.MODEL || "gpt-4o-mini";
+const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
 
-if (!OPENAI_API_KEY || !LINE_CHANNEL_ACCESS_TOKEN || !LINE_CHANNEL_SECRET) {
-  console.error("Missing env vars. Required: OPENAI_API_KEY, LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET");
-  process.exit(1);
-}
-
-// ── Helpers ──
 function loadPrompt(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), "utf8");
 }
 
-async function ask(systemPrompt, userPayload) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isProcessableEvent(event) {
+  return isRecord(event)
+    && event.type === "message"
+    && isRecord(event.message)
+    && event.message.type === "text"
+    && typeof event.message.text === "string"
+    && typeof event.replyToken === "string"
+    && event.replyToken.trim().length > 0;
+}
+
+async function ask(systemPrompt, userPayload, deps) {
+  const response = await deps.fetchImpl("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Authorization": `Bearer ${deps.openAiApiKey}`,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: deps.model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: typeof userPayload === "string" ? userPayload : JSON.stringify(userPayload) },
       ],
       temperature: 0.3,
     }),
+    signal: AbortSignal.timeout(deps.requestTimeoutMs),
   });
 
   if (!response.ok) {
     const err = await response.text();
-    console.error("OpenAI API error:", err);
+    deps.logger.error("OpenAI API error:", err);
     return "⚠️ AI service temporarily unavailable. Please try again.";
   }
 
@@ -67,7 +72,7 @@ async function ask(systemPrompt, userPayload) {
 }
 
 // ── Command Handlers ──
-async function handleSummary(text) {
+async function handleSummary(text, deps) {
   // Parse input after /summary
   const body = text.replace(/^\/summary\s*/, "").trim();
   if (!body) return "Usage: /summary {json with lesson record}\n\nExample:\n/summary {\"studentCode\":\"S-001\",\"date\":\"2026-05-30\",\"topic\":\"Past tense\",\"performance\":\"Good progress\"}";
@@ -80,18 +85,18 @@ async function handleSummary(text) {
   }
 
   const prompt = loadPrompt("prompts/parent-weekly-summary.md");
-  return await ask(prompt, JSON.stringify(input));
+  return await ask(prompt, JSON.stringify(input), deps);
 }
 
-async function handleRisk(text) {
+async function handleRisk(text, deps) {
   const body = text.replace(/^\/risk\s*/, "").trim();
   if (!body) return "Usage: /risk <draft message to check>\n\nExample:\n/risk Tom did great this week! He will definitely get an A.";
 
   const prompt = loadPrompt("prompts/parent-message-risk-check.md");
-  return await ask(prompt, JSON.stringify({ body }));
+  return await ask(prompt, JSON.stringify({ body }), deps);
 }
 
-async function handleTask(text) {
+async function handleTask(text, deps) {
   const body = text.replace(/^\/task\s*/, "").trim();
   if (!body) return "Usage: /task {json with lesson record}\n\nExample:\n/task {\"studentCode\":\"S-001\",\"topic\":\"Past tense\",\"performance\":\"Needs irregular verb practice\",\"followUps\":[\"Send worksheet\"]}";
 
@@ -103,80 +108,117 @@ async function handleTask(text) {
   }
 
   const prompt = loadPrompt("prompts/admin-task-router.md");
-  return await ask(prompt, JSON.stringify(input));
+  return await ask(prompt, JSON.stringify(input), deps);
 }
 
-// ── LINE API ──
-function verifySignature(req) {
-  const sig = crypto
-    .createHmac("sha256", LINE_CHANNEL_SECRET)
-    .update(req.rawBody)
-    .digest("base64");
-  return sig === req.headers["x-line-signature"];
-}
-
-async function replyToLine(replyToken, text) {
+async function replyToLine(replyToken, text, deps) {
   // LINE has 5000 char limit per message
   const truncated = text.length > 4900 ? text.slice(0, 4900) + "\n...(truncated)" : text;
 
-  await fetch("https://api.line.me/v2/bot/message/reply", {
+  await deps.fetchImpl("https://api.line.me/v2/bot/message/reply", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+      "Authorization": `Bearer ${deps.lineChannelAccessToken}`,
     },
     body: JSON.stringify({
       replyToken,
       messages: [{ type: "text", text: truncated }],
     }),
+    signal: AbortSignal.timeout(deps.requestTimeoutMs),
   });
 }
 
-// ── Express App ──
-const app = express();
-app.use(express.json({
-  verify: (req, _res, buf) => { req.rawBody = buf; },
-}));
+async function processEvent(event, deps) {
+  const text = event.message.text.trim();
+  const command = text.match(/^\/\S+/)?.[0];
+  let reply;
 
-app.post("/webhook", async (req, res) => {
-  if (!verifySignature(req)) {
-    console.warn("Invalid signature");
-    return res.status(401).end();
+  try {
+    if (command === "/summary") {
+      reply = await handleSummary(text, deps);
+    } else if (command === "/risk") {
+      reply = await handleRisk(text, deps);
+    } else if (command === "/task") {
+      reply = await handleTask(text, deps);
+    } else {
+      reply = "🤖 Moosie EduOps Bot\n\nAvailable commands:\n/summary — Generate parent weekly summary\n/risk — Check message for privacy risks\n/task — Extract action items from notes\n\nUnknown commands and other text are not sent to AI.";
+    }
+  } catch (err) {
+    deps.logger.error("Handler error:", err);
+    reply = "⚠️ Something went wrong. Please try again.";
   }
 
-  for (const event of req.body.events || []) {
-    if (event.type !== "message" || event.message.type !== "text") continue;
+  await replyToLine(event.replyToken, reply, deps);
+}
 
-    const text = event.message.text.trim();
-    let reply;
+export function createApp(options = {}) {
+  const deps = {
+    openAiApiKey: options.openAiApiKey ?? process.env.OPENAI_API_KEY,
+    lineChannelAccessToken: options.lineChannelAccessToken ?? process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    lineChannelSecret: options.lineChannelSecret ?? process.env.LINE_CHANNEL_SECRET,
+    model: options.model ?? process.env.MODEL ?? "gpt-4o-mini",
+    fetchImpl: options.fetchImpl ?? globalThis.fetch,
+    logger: options.logger ?? console,
+    requestTimeoutMs: Number.isFinite(Number(options.requestTimeoutMs)) && Number(options.requestTimeoutMs) > 0
+      ? Number(options.requestTimeoutMs)
+      : DEFAULT_REQUEST_TIMEOUT_MS,
+  };
+  const app = express();
 
-    try {
-      if (text.startsWith("/summary")) {
-        reply = await handleSummary(text);
-      } else if (text.startsWith("/risk")) {
-        reply = await handleRisk(text);
-      } else if (text.startsWith("/task")) {
-        reply = await handleTask(text);
-      } else {
-        reply = "🤖 Moosie EduOps Bot\n\nAvailable commands:\n/summary — Generate parent weekly summary\n/risk — Check message for privacy risks\n/task — Extract action items from notes";
-      }
-    } catch (err) {
-      console.error("Handler error:", err);
-      reply = "⚠️ Something went wrong. Please try again.";
+  app.use(express.json({
+    strict: false,
+    verify: (req, _res, buf) => { req.rawBody = buf; },
+  }));
+
+  app.post("/webhook", (req, res) => {
+    if (!verifyLineSignature(
+      req?.rawBody,
+      req?.headers?.["x-line-signature"],
+      deps.lineChannelSecret
+    )) {
+      deps.logger.warn("Invalid signature");
+      return res.status(401).end();
     }
 
-    await replyToLine(event.replyToken, reply);
+    if (!isRecord(req.body) || !Array.isArray(req.body.events)) {
+      return res.status(400).json({ error: "Invalid webhook payload" });
+    }
+
+    const events = req.body.events.filter(isProcessableEvent);
+    res.status(200).end();
+
+    // Acknowledge LINE before doing any work that can wait on an external service.
+    // Each event is independent: a failed request must not block sibling events.
+    setImmediate(() => {
+      for (const event of events) {
+        void processEvent(event, deps).catch((err) => {
+          deps.logger.error("Event processing error:", err);
+        });
+      }
+    });
+  });
+
+  // Health check
+  app.get("/", (_req, res) => {
+    res.json({ status: "ok", bot: "moosie-eduops", commands: ["/summary", "/risk", "/task"] });
+  });
+
+  return app;
+}
+
+export const app = createApp();
+const isMain = process.argv[1]
+  && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+
+if (isMain) {
+  if (!process.env.OPENAI_API_KEY || !process.env.LINE_CHANNEL_ACCESS_TOKEN || !process.env.LINE_CHANNEL_SECRET) {
+    console.error("Missing env vars. Required: OPENAI_API_KEY, LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET");
+    process.exit(1);
   }
 
-  res.status(200).end();
-});
-
-// Health check
-app.get("/", (_req, res) => {
-  res.json({ status: "ok", bot: "moosie-eduops", commands: ["/summary", "/risk", "/task"] });
-});
-
-app.listen(PORT, () => {
-  console.log(`🤖 Moosie LINE Bot running on port ${PORT}`);
-  console.log(`   Webhook: http://localhost:${PORT}/webhook`);
-});
+  app.listen(PORT, () => {
+    console.log(`🤖 Moosie LINE Bot running on port ${PORT}`);
+    console.log(`   Webhook: http://localhost:${PORT}/webhook`);
+  });
+}

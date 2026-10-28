@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moosi 說 · 課後學習圖卡示範</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: sans-serif; margin: 0; background: #f4f1ea; color: #2b2b2b; }
+  header { background: #2f6b4f; color: #fff; padding: 16px 20px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 6px 0 0; font-size: 13px; color: #dcefe2; }
+  main { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 16px; max-width: 1080px; margin: 0 auto; }
+  @media (min-width: 900px) { main { grid-template-columns: 1fr 1fr; } }
+  .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .notice { background: #fff8e6; border: 1px solid #e8a13d; border-radius: 12px; padding: 12px 16px; font-size: 13px; }
+  label { display: block; font-weight: 700; margin: 12px 0 6px; font-size: 14px; }
+  select, textarea, button { font-size: 15px; }
+  select, textarea { width: 100%; box-sizing: border-box; border: 1px solid #bbb; border-radius: 8px; padding: 8px; }
+  textarea { min-height: 130px; line-height: 1.6; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button { background: #2f6b4f; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+  button.secondary { background: #fff; color: #2f6b4f; border: 1px solid #2f6b4f; }
+  button:disabled { opacity: .5; cursor: default; }
+  #preview img { width: 100%; max-width: 430px; aspect-ratio: 4 / 5; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
+  #status { font-weight: 700; }
+  #hash { font-family: monospace; font-size: 12px; word-break: break-all; }
+  pre { background: #f6f6f6; border-radius: 8px; padding: 10px; overflow: auto; font-size: 12px; max-height: 320px; }
+  #error, #voiceWarn { color: #a33; font-size: 14px; white-space: pre-wrap; }
+  .hint { font-size: 12px; color: #666; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Moosi 說 · 課後學習圖卡示範 (DEMO)</h1>
+  <p>打字逐字稿 → 課綱限定草稿 → 老師預覽 → 雜湊綁定核准。本機示範，不會實際傳送。</p>
+</header>
+<main>
+  <section class="card">
+    <div class="notice" id="notices">載入中…</div>
+    <label for="student">學生（請從名單選擇，不手動輸入姓名）</label>
+    <select id="student"></select>
+    <div class="hint" id="unitInfo"></div>
+    <div class="hint">名冊與弱點詞皆為虛構 synthetic fixture（弱點詞僅取自課綱白名單），不是模型推斷或真實學習診斷。</div>
+    <label for="transcript">老師課後文字紀錄（打字逐字稿；固定模擬轉寫也不是語音辨識）</label>
+    <textarea id="transcript"></textarea>
+    <div class="row">
+      <button id="sampleBtn" class="secondary" type="button">載入水果課範例</button>
+      <button id="draftBtn" type="button">產生草稿預覽</button>
+    </div>
+    <hr style="margin:16px 0">
+    <div style="border:1px dashed #2f6b4f;padding:12px;border-radius:8px">
+      <strong>合成 OGG/Opus 轉寫（離線、固定模擬）</strong>
+      <p class="hint">僅能使用自行生成的合成音調測試音訊；絕不可選取真實錄音。ffmpeg 只會本機正規化音訊，轉寫與內容無關，永遠回傳固定範例（transcriptionIsMock=true），不是語音辨識。</p>
+      <input type="file" id="voiceFile" accept=".ogg,audio/ogg,application/ogg">
+      <label style="font-weight:400;font-size:13px"><input type="checkbox" id="ackSynthetic"> 我確認這是合成測試音訊，且由 adult-teacher 提交</label>
+      <div class="row"><button id="voiceBtn" type="button">本機正規化並取得固定模擬逐字稿</button></div>
+      <div id="voiceMeta" class="hint"></div>
+      <div id="voiceWarn"></div>
+    </div>
+    <div id="error"></div>
+  </section>
+  <section class="card" id="preview">
+    <h2 style="margin-top:0">草稿預覽（4:5）</h2>
+    <p>狀態：<span id="status">尚未產生草稿</span></p>
+    <p id="teacherReview" class="notice" role="status" hidden></p>
+    <p class="hint">內容雜湊 (SHA-256)：<span id="hash">—</span></p>
+    <img id="cardImg" alt="圖卡預覽" hidden>
+    <pre id="cardJson" hidden></pre>
+    <label for="approver">核准身份（獨立步驟，AI 不能核准）</label>
+    <select id="approver"><option value="teacher">老師</option><option value="admin">管理員</option></select>
+    <div class="row"><button id="approveBtn" type="button" disabled>核准此版本</button></div>
+    <p class="hint">核准會綁定上方雜湊；內容被修改或雜湊不符就無法核准。核准只更新本地狀態，不會傳送給家長。</p>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let current = null;
+let uploadSequence = 0;
+let approvalInFlight = false;
+let transcriptChanged = false;
+
+function invalidatePreview(message = "內容已變更，請重新產生草稿") {
+  current = null;
+  $("status").textContent = message;
+  $("hash").textContent = "—";
+  $("cardImg").hidden = true;
+  $("cardImg").removeAttribute("src");
+  $("cardJson").hidden = true;
+  $("cardJson").textContent = "";
+  $("teacherReview").hidden = true;
+  $("teacherReview").textContent = "";
+  $("approveBtn").disabled = true;
+}
+
+function showError(obj) {
+  $("error").textContent = obj?.error
+    ? `錯誤 [${obj.error.code}] ${obj.error.message}`
+    : "發生未知錯誤。";
+}
+
+async function readResponse(res) {
+  try { return await res.json(); }
+  catch { throw new Error("伺服器回應格式無效。"); }
+}
+
+async function loadContext() {
+  try {
+    const data = await readResponse(await fetch("/api/context"));
+    if (!data.students) throw new Error("無法載入示範資料。");
+    $("student").textContent = "";
+    for (const s of data.students) {
+      const label = `${s.studentCode} · ${s.nickname} · ${s.level} · ${s.unit} · 弱點詞：${(s.weakWords ?? []).join("/")}`;
+      const opt = document.createElement("option");
+      opt.value = s.studentCode;
+      opt.textContent = label;
+      $("student").appendChild(opt);
+    }
+    $("unitInfo").textContent = `單元：${data.unit.title} ${data.unit.topicLabel}｜單字：${data.unit.words.join(", ")}｜句型：${data.unit.sentencePatterns.join(" ")}`;
+    if (!transcriptChanged) $("transcript").value = data.sampleTranscript;
+    $("notices").innerHTML = data.notices.map((notice) => `<div>· ${notice}</div>`).join("");
+  } catch (err) {
+    $("notices").textContent = "示範資料載入失敗。";
+    showError({ error: { code: "CONTEXT_ERROR", message: err.message } });
+  }
+}
+
+$("sampleBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
+  const sequence = ++uploadSequence;
+  invalidatePreview("正在載入範例文字…");
+  try {
+    const data = await readResponse(await fetch("/api/context"));
+    if (sequence !== uploadSequence) return;
+    $("transcript").value = data.sampleTranscript;
+    transcriptChanged = true;
+    invalidatePreview("已載入範例文字，請重新產生草稿");
+    $("error").textContent = "";
+  } catch (err) {
+    if (sequence === uploadSequence) {
+      $("status").textContent = "範例文字載入失敗，請重試";
+      showError({ error: { code: "CONTEXT_ERROR", message: err.message } });
+    }
+  }
+});
+
+$("draftBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
+  const sequence = ++uploadSequence;
+  const studentCode = $("student").value;
+  const transcript = $("transcript").value;
+  invalidatePreview("正在產生草稿…");
+  $("error").textContent = "";
+  try {
+    const res = await fetch("/api/drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentCode, transcript }),
+    });
+    const data = await readResponse(res);
+    if (sequence !== uploadSequence) return;
+    if (!res.ok) {
+      $("status").textContent = "草稿產生失敗，請重試";
+      return showError(data);
+    }
+    current = data;
+    if (data.status === "needs_teacher_input") {
+      $("status").textContent = `需要老師補充證據（${data.id}）`;
+      $("hash").textContent = "—";
+      $("teacherReview").textContent = data.review?.message ?? "缺少明確練習依據；請補充老師觀察後重新產生。";
+      $("teacherReview").hidden = false;
+      $("cardJson").textContent = JSON.stringify({ status: data.status, review: data.review }, null, 2);
+      $("cardJson").hidden = false;
+      return;
+    }
+    $("status").textContent = `待核准（${data.id}）`;
+    $("hash").textContent = data.contentHash;
+    $("cardImg").src = `/api/drafts/${data.id}/card.svg`;
+    $("cardImg").hidden = false;
+    $("cardJson").textContent = JSON.stringify(data.card, null, 2);
+    $("cardJson").hidden = false;
+    $("approveBtn").disabled = false;
+  } catch (err) {
+    if (sequence === uploadSequence) {
+      $("status").textContent = "草稿產生失敗，請重試";
+      showError({ error: { code: "REQUEST_FAILED", message: err.message } });
+    }
+  }
+});
+
+$("approveBtn").addEventListener("click", async () => {
+  if (approvalInFlight || !current || current.status !== "pending" || !current.card) return;
+  const approvedDraft = current;
+  const approvedBy = $("approver").value;
+  const statusBeforeApproval = $("status").textContent;
+  const guardedControls = ["student", "transcript", "sampleBtn", "draftBtn", "voiceFile", "ackSynthetic", "voiceBtn", "approver"];
+  const disabledBeforeApproval = new Map(guardedControls.map((id) => [id, $(id).disabled]));
+  const approveButton = $("approveBtn");
+  const approveButtonLabel = approveButton.textContent;
+  approvalInFlight = true;
+  for (const id of guardedControls) $(id).disabled = true;
+  approveButton.disabled = true;
+  approveButton.textContent = "核准中…";
+  $("status").textContent = `正在核准（${approvedDraft.id}）…`;
+  $("error").textContent = "";
+  try {
+    const res = await fetch(`/api/drafts/${approvedDraft.id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contentHash: approvedDraft.contentHash, approvedBy }),
+    });
+    const data = await readResponse(res);
+    if (!res.ok) {
+      $("status").textContent = statusBeforeApproval;
+      showError(data);
+      return;
+    }
+    current = data;
+    $("status").textContent = `已核准（${data.id}，${data.approvedBy}）· 本地示範狀態，未傳送`;
+  } catch (err) {
+    $("status").textContent = statusBeforeApproval;
+    showError({ error: { code: "REQUEST_FAILED", message: err.message } });
+  } finally {
+    approvalInFlight = false;
+    for (const [id, disabled] of disabledBeforeApproval) $(id).disabled = disabled;
+    approveButton.textContent = approveButtonLabel;
+    if (current?.id === approvedDraft.id && current.status === "pending") approveButton.disabled = false;
+  }
+});
+
+$("voiceFile").addEventListener("change", () => {
+  if (approvalInFlight) return;
+  uploadSequence++;
+  $("ackSynthetic").checked = false;
+  $("voiceMeta").textContent = "";
+  $("voiceWarn").textContent = "檔案已變更；請確認只選合成測試音訊。";
+  invalidatePreview("音訊來源已變更，請重新產生草稿");
+});
+
+$("student").addEventListener("change", () => {
+  if (approvalInFlight) return;
+  uploadSequence++;
+  invalidatePreview("學生已變更，請重新產生草稿");
+});
+
+$("transcript").addEventListener("input", () => {
+  if (approvalInFlight) return;
+  transcriptChanged = true;
+  uploadSequence++;
+  invalidatePreview("逐字稿已變更，請重新產生草稿");
+});
+
+$("voiceBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
+  const file = $("voiceFile").files[0];
+  if (!file) { $("voiceWarn").textContent = "請選擇自行生成的 OGG 合成測試音訊；不可使用真實錄音。"; return; }
+  if (!$("ackSynthetic").checked) { $("voiceWarn").textContent = "請先確認這是合成測試音訊。"; return; }
+  const sequence = ++uploadSequence;
+  const studentAtStart = $("student").value;
+  const transcriptAtStart = $("transcript").value;
+  const button = $("voiceBtn");
+  button.disabled = true;
+  button.textContent = "本機處理中…";
+  $("voiceWarn").textContent = "";
+  $("voiceMeta").textContent = "";
+  invalidatePreview("音訊處理中…");
+  try {
+    if (file.size > 2 * 1024 * 1024) throw new Error("音訊超過 2 MiB 上限。");
+    const body = await file.arrayBuffer();
+    if (sequence !== uploadSequence || studentAtStart !== $("student").value || transcriptAtStart !== $("transcript").value) return;
+    const res = await fetch("/api/voice/transcribe", {
+      method: "POST",
+      headers: { "Content-Type": "audio/ogg", "X-Demo-Synthetic": "true", "X-Input-Role": "adult-teacher" },
+      body,
+    });
+    const data = await readResponse(res);
+    if (!res.ok) throw new Error(`錯誤 [${data.error?.code ?? "REQUEST_FAILED"}] ${data.error?.message ?? "請求失敗。"}`);
+    if (sequence !== uploadSequence || studentAtStart !== $("student").value || transcriptAtStart !== $("transcript").value) return;
+    $("transcript").value = data.transcript;
+    transcriptChanged = true;
+    invalidatePreview("已載入固定模擬逐字稿，請確認並重新產生草稿");
+    $("voiceMeta").textContent = `本機正規化：${data.normalization.sampleRate} Hz、${data.normalization.channels} 聲道、${data.normalization.bitsPerSample}-bit PCM16 WAV；長度 ${data.normalization.durationSec} 秒。固定 mock：${data.transcriptionIsMock}；傳送訊息：${data.sendsMessages}。`;
+    $("voiceWarn").textContent = data.warning;
+  } catch (err) {
+    if (sequence === uploadSequence) $("voiceWarn").textContent = err.message || "音訊請求失敗。";
+  } finally {
+    button.disabled = false;
+    button.textContent = "本機正規化並取得固定模擬逐字稿";
+  }
+});
+
+loadContext();
+</script>
+</body>
+</html>
