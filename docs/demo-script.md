@@ -53,12 +53,16 @@ Expected reviewer takeaway:
 - The rubric checks clarity, specificity, non-overclaiming, privacy safety,
   actionability, and tone.
 
-## 5. Show the LINE Demo Scope
+## 5. Show the LINE Slash-Command Demo Scope
 
-Open `examples/line-webhook-demo/README.md`.
+Start this separate server with `npm run line:slash-demo`, then open
+`examples/line-webhook-demo/README.md`. Do not use `npm run line:quick-reply`
+for these slash-command examples; that command starts the full quick-reply
+integration instead.
 
 Expected reviewer takeaway:
 
-- The LINE demo supports `/summary`, `/risk`, and `/task`.
+- The slash-command demo supports `/summary`, `/risk`, and `/task`; unknown
+  commands are shown the guide and are not sent to the model.
 - CRM, tuition payment, scheduling, grade management, and identity records are
   intentionally out of scope.

@@ -5,6 +5,8 @@
  * and handles quick reply button actions.
  *
  * Usage:
+ *   npm run line:quick-reply
+ *   (legacy alias: npm run line)
  *   node src/adapters/line-webhook-server.mjs
  *
  * Environment:
@@ -15,7 +17,8 @@
  */
 
 import express from "express";
-import crypto from "node:crypto";
+import { pathToFileURL } from "node:url";
+import { verifyLineSignature } from "./line-signature.mjs";
 import {
   generateLessonRecord,
   generateParentSummary,
@@ -59,15 +62,11 @@ async function replyMessage(replyToken, messages) {
 }
 
 function verifySignature(req) {
-  const secret = process.env.LINE_CHANNEL_SECRET;
-  if (!secret) return false;
-  const signature = req.headers["x-line-signature"];
-  if (!signature) return false;
-  const hash = crypto
-    .createHmac("sha256", secret)
-    .update(req.rawBody)
-    .digest("base64");
-  return hash === signature;
+  return verifyLineSignature(
+    req?.rawBody,
+    req?.headers?.["x-line-signature"],
+    process.env.LINE_CHANNEL_SECRET
+  );
 }
 
 // ── Quick Reply Definitions ────────────────────────────────────
@@ -97,17 +96,32 @@ function buildQuickReply(excludeAction) {
 
 // ── In-Memory Store (replace with DB in production) ────────────
 
-const lessonRecords = new Map(); // studentCode → latest lesson record
-const riskReports = new Map(); // studentCode → latest risk report
-const sessionStudentCodes = new Map(); // LINE source key → latest studentCode
+// Keep each LINE source's records and risk reports together. Never use a
+// global fallback: a source without a valid LINE identity has no data context.
+const sessionData = new Map(); // source key → session-specific records and reports
 
 function getSessionKey(event) {
-  const source = event.source || {};
-  return source.userId || source.groupId || source.roomId || "global";
+  const source = event?.source || {};
+  if (typeof source.userId === "string" && source.userId) return `user:${source.userId}`;
+  if (typeof source.groupId === "string" && source.groupId) return `group:${source.groupId}`;
+  if (typeof source.roomId === "string" && source.roomId) return `room:${source.roomId}`;
+  return null;
 }
 
-function getLastStudentCode(event) {
-  return sessionStudentCodes.get(getSessionKey(event)) || [...lessonRecords.keys()].pop();
+function getSessionState(sessionKey, create = false) {
+  if (!sessionKey) return null;
+  if (!sessionData.has(sessionKey) && create) {
+    sessionData.set(sessionKey, {
+      latestStudentCode: null,
+      lessonRecords: new Map(),
+      riskReports: new Map(),
+    });
+  }
+  return sessionData.get(sessionKey) || null;
+}
+
+function getLastStudentCode(sessionKey) {
+  return getSessionState(sessionKey)?.latestStudentCode || null;
 }
 
 // ── Action Handlers ────────────────────────────────────────────
@@ -117,17 +131,20 @@ function getLastStudentCode(event) {
  * Full pipeline: input → lesson record → parent summary → risk check → tasks
  */
 async function handleTeacherInput(text, sessionKey) {
+  if (!sessionKey) throw new Error("Unable to identify LINE source.");
+  const session = getSessionState(sessionKey, true);
+
   // Step 1: Generate lesson record (with schema validation + auto-retry)
   const { data: record, warnings } = await generateLessonRecord(text);
-  lessonRecords.set(record.studentCode, record);
-  sessionStudentCodes.set(sessionKey, record.studentCode);
+  session.lessonRecords.set(record.studentCode, record);
+  session.latestStudentCode = record.studentCode;
 
   // Step 2: Generate parent summary
   const summary = await generateParentSummary(record);
 
   // Step 3: Risk check
   const risk = await checkParentMessageRisk(summary, record);
-  riskReports.set(record.studentCode, risk);
+  session.riskReports.set(record.studentCode, risk);
 
   // Step 4: Extract tasks
   const tasks = await extractAdminTasks(record);
@@ -178,8 +195,8 @@ async function handleTeacherInput(text, sessionKey) {
 /**
  * Handle "generate_summary" quick reply action.
  */
-async function handleGenerateSummary(studentCode) {
-  const record = lessonRecords.get(studentCode);
+async function handleGenerateSummary(sessionKey, studentCode) {
+  const record = getSessionState(sessionKey)?.lessonRecords.get(studentCode);
   if (!record) {
     return {
       type: "text",
@@ -199,9 +216,10 @@ async function handleGenerateSummary(studentCode) {
 /**
  * Handle "check_risk" quick reply action.
  */
-async function handleCheckRisk(studentCode) {
-  const record = lessonRecords.get(studentCode);
-  const risk = riskReports.get(studentCode);
+async function handleCheckRisk(sessionKey, studentCode) {
+  const session = getSessionState(sessionKey);
+  const record = session?.lessonRecords.get(studentCode);
+  const risk = session?.riskReports.get(studentCode);
 
   if (!record || !risk) {
     return {
@@ -237,8 +255,8 @@ async function handleCheckRisk(studentCode) {
 /**
  * Handle "extract_tasks" quick reply action.
  */
-async function handleExtractTasks(studentCode) {
-  const record = lessonRecords.get(studentCode);
+async function handleExtractTasks(sessionKey, studentCode) {
+  const record = getSessionState(sessionKey)?.lessonRecords.get(studentCode);
   if (!record) {
     return {
       type: "text",
@@ -278,8 +296,8 @@ async function handleExtractTasks(studentCode) {
 /**
  * Handle "generate_practice" quick reply action.
  */
-async function handleGeneratePractice(studentCode) {
-  const record = lessonRecords.get(studentCode);
+async function handleGeneratePractice(sessionKey, studentCode) {
+  const record = getSessionState(sessionKey)?.lessonRecords.get(studentCode);
   if (!record) {
     return {
       type: "text",
@@ -314,10 +332,11 @@ async function handleGeneratePractice(studentCode) {
 /**
  * Handle "list_yellow_students" quick reply action.
  */
-async function handleListYellowStudents() {
+async function handleListYellowStudents(sessionKey) {
   const yellowStudents = [];
+  const records = getSessionState(sessionKey)?.lessonRecords;
 
-  for (const [code, record] of lessonRecords.entries()) {
+  for (const [code, record] of records || []) {
     if (record.retentionSignal === "yellow" || record.retentionSignal === "red") {
       yellowStudents.push({
         code,
@@ -356,15 +375,23 @@ async function handleMessage(event) {
 
   if (message.type !== "text") return;
 
+  const sessionKey = getSessionKey(event);
+  if (!sessionKey) {
+    return replyMessage(replyToken, {
+      type: "text",
+      text: "無法識別 LINE 對話來源，請重新傳送訊息。",
+      quickReply: buildQuickReply(),
+    });
+  }
+
   const text = message.text.trim();
 
   // Quick reply action routing
   switch (text) {
     case "generate_summary": {
-      // Resolve the latest student from this LINE source context.
-      const lastCode = getLastStudentCode(event);
+      const lastCode = getLastStudentCode(sessionKey);
       if (lastCode) {
-        return replyMessage(replyToken, await handleGenerateSummary(lastCode));
+        return replyMessage(replyToken, await handleGenerateSummary(sessionKey, lastCode));
       }
       return replyMessage(replyToken, {
         type: "text",
@@ -374,9 +401,9 @@ async function handleMessage(event) {
     }
 
     case "check_risk": {
-      const lastCode = getLastStudentCode(event);
+      const lastCode = getLastStudentCode(sessionKey);
       if (lastCode) {
-        return replyMessage(replyToken, await handleCheckRisk(lastCode));
+        return replyMessage(replyToken, await handleCheckRisk(sessionKey, lastCode));
       }
       return replyMessage(replyToken, {
         type: "text",
@@ -386,9 +413,9 @@ async function handleMessage(event) {
     }
 
     case "extract_tasks": {
-      const lastCode = getLastStudentCode(event);
+      const lastCode = getLastStudentCode(sessionKey);
       if (lastCode) {
-        return replyMessage(replyToken, await handleExtractTasks(lastCode));
+        return replyMessage(replyToken, await handleExtractTasks(sessionKey, lastCode));
       }
       return replyMessage(replyToken, {
         type: "text",
@@ -398,9 +425,9 @@ async function handleMessage(event) {
     }
 
     case "generate_practice": {
-      const lastCode = getLastStudentCode(event);
+      const lastCode = getLastStudentCode(sessionKey);
       if (lastCode) {
-        return replyMessage(replyToken, await handleGeneratePractice(lastCode));
+        return replyMessage(replyToken, await handleGeneratePractice(sessionKey, lastCode));
       }
       return replyMessage(replyToken, {
         type: "text",
@@ -410,14 +437,24 @@ async function handleMessage(event) {
     }
 
     case "list_yellow_students": {
-      return replyMessage(replyToken, await handleListYellowStudents());
+      return replyMessage(replyToken, await handleListYellowStudents(sessionKey));
     }
+  }
+
+  // Slash commands belong to the separate line:slash-demo server; never treat
+  // an unsupported slash-prefixed message as a teacher lesson note.
+  if (text.startsWith("/")) {
+    return replyMessage(replyToken, {
+      type: "text",
+      text: "這個 LINE bot 不使用斜線指令。請直接輸入課後筆記並使用快速回覆；若要測試 /summary、/risk、/task，請啟動 npm run line:slash-demo。",
+      quickReply: buildQuickReply(),
+    });
   }
 
   // Check if this looks like teacher input (contains student code pattern)
   if (/^S-\d{3}\s/.test(text) || text.length > 10) {
     try {
-      const response = await handleTeacherInput(text, getSessionKey(event));
+      const response = await handleTeacherInput(text, sessionKey);
       return replyMessage(replyToken, response);
     } catch (err) {
       console.error("handleTeacherInput error:", err);
@@ -439,21 +476,85 @@ async function handleMessage(event) {
 
 // ── Webhook Endpoint ───────────────────────────────────────────
 
+function isObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isValidWebhookEvent(event) {
+  if (!isObject(event) || typeof event.type !== "string" || !event.type) {
+    return false;
+  }
+
+  if (event.type !== "message") return true;
+  if (!isObject(event.message) || typeof event.message.type !== "string" || !event.message.type) {
+    return false;
+  }
+
+  if (event.message.type === "text") {
+    return typeof event.message.text === "string" &&
+      typeof event.replyToken === "string" &&
+      event.replyToken.length > 0;
+  }
+
+  return true;
+}
+
+const PROCESSING_FAILURE_MESSAGE = "處理這則訊息時發生問題，請稍後再試一次。";
+
+function dispatchWebhookEventSafely(event, {
+  processMessage = handleMessage,
+  sendReply = replyMessage,
+  logError = console.error,
+} = {}) {
+  return Promise.resolve()
+    .then(() => processMessage(event))
+    .catch(async (err) => {
+      logError("Event handling error:", err);
+
+      if (
+        event?.type !== "message" ||
+        event?.message?.type !== "text" ||
+        typeof event.replyToken !== "string" ||
+        event.replyToken.length === 0
+      ) {
+        return;
+      }
+
+      try {
+        await sendReply(event.replyToken, {
+          type: "text",
+          text: PROCESSING_FAILURE_MESSAGE,
+        });
+      } catch {
+        logError("Failed to send generic LINE processing-failure reply");
+      }
+    });
+}
+
 app.post("/webhook", async (req, res) => {
   if (!verifySignature(req)) {
     console.warn("Invalid LINE signature");
     return res.status(401).end();
   }
 
-  const events = req.body.events || [];
+  if (!isObject(req.body) || !Array.isArray(req.body.events)) {
+    console.warn("Invalid LINE webhook body");
+    return res.status(400).end();
+  }
+
+  const events = req.body.events;
   console.log(`Received ${events.length} event(s)`);
 
-  // Process events asynchronously
+  // Skip malformed items and isolate failures so one event cannot interrupt
+  // response handling or leave a rejected promise unobserved.
   for (const event of events) {
+    if (!isValidWebhookEvent(event)) {
+      console.warn("Skipping malformed LINE webhook event");
+      continue;
+    }
+
     if (event.type === "message") {
-      handleMessage(event).catch((err) => {
-        console.error("Event handling error:", err);
-      });
+      void dispatchWebhookEventSafely(event);
     }
   }
 
@@ -462,23 +563,56 @@ app.post("/webhook", async (req, res) => {
 
 // ── Health Check ───────────────────────────────────────────────
 
+function getMissingServiceConfig() {
+  const missing = [];
+  if (!process.env.LINE_CHANNEL_ACCESS_TOKEN) missing.push("LINE_CHANNEL_ACCESS_TOKEN");
+  if (!process.env.LINE_CHANNEL_SECRET) missing.push("LINE_CHANNEL_SECRET");
+  for (const name of validateConfig().missing) {
+    if (!missing.includes(name)) missing.push(name);
+  }
+  return missing;
+}
+
 app.get("/health", (_req, res) => {
+  const missing = getMissingServiceConfig();
+  if (missing.length > 0) {
+    return res.status(503).json({
+      status: "not_ready",
+      service: "moosie-line-webhook",
+      missing,
+    });
+  }
+
   res.json({
     status: "ok",
     service: "moosie-line-webhook",
-    records: lessonRecords.size,
+    records: [...sessionData.values()].reduce(
+      (total, session) => total + session.lessonRecords.size,
+      0
+    ),
   });
 });
 
 // ── Start ──────────────────────────────────────────────────────
 
-const cfg = validateConfig();
-if (!cfg.ok) {
-  console.warn(`⚠️  Missing config: ${cfg.missing.join(", ")}`);
-  console.warn(`   Some features may not work without ${cfg.missing.join(", ")}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const missing = getMissingServiceConfig();
+  if (missing.length > 0) {
+    console.error(`Missing required LINE service configuration: ${missing.join(", ")}`);
+    process.exitCode = 1;
+  } else {
+    app.listen(PORT, () => {
+      console.log(`Moosie LINE webhook server listening on :${PORT}`);
+      console.log(`  Quick replies: ${QUICK_REPLIES.map((q) => q.label).join(", ")}`);
+    });
+  }
 }
 
-app.listen(PORT, () => {
-  console.log(`Moosie LINE webhook server listening on :${PORT}`);
-  console.log(`  Quick replies: ${QUICK_REPLIES.map((q) => q.label).join(", ")}`);
-});
+export {
+  app,
+  dispatchWebhookEventSafely,
+  getSessionKey,
+  handleMessage,
+  sessionData,
+  verifySignature,
+};

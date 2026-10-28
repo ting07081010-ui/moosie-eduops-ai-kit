@@ -15,18 +15,22 @@ import {
   contentHash,
   createStore,
   renderCardSvg,
+  validateStudentRoster,
 } from "./lib/moosi-say.mjs";
 import {
   defaultTranscriptionProvider,
   normalizeAudio,
   transcribeMock,
 } from "./lib/audio.mjs";
+import { createAudioAdmissionController } from "./lib/audio-admission.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3107);
 const HOST = process.env.HOST || "127.0.0.1";
 const unit = JSON.parse(fs.readFileSync(path.join(__dirname, "data/unit5.json"), "utf8"));
-const students = JSON.parse(fs.readFileSync(path.join(__dirname, "data/students.json"), "utf8"));
+const students = validateStudentRoster(
+  JSON.parse(fs.readFileSync(path.join(__dirname, "data/students.json"), "utf8"))
+);
 
 function publicRecord(record) {
   return {
@@ -87,7 +91,9 @@ function publicAudioError(err) {
 export function createApp(opts = {}) {
   const transcriptionProvider = opts.transcriptionProvider ?? defaultTranscriptionProvider;
   const audioDeps = opts.audioDeps ?? {};
+  const audioAdmission = opts.audioAdmission ?? createAudioAdmissionController();
   const store = opts.store ?? createStore();
+  const roster = opts.students === undefined ? students : validateStudentRoster(opts.students);
   const app = express();
 
   // The voice endpoint gates Content-Type/declarations before any body parser.
@@ -110,7 +116,7 @@ export function createApp(opts = {}) {
         words: unit.words,
         sentencePatterns: unit.sentencePatterns,
       },
-      students: students.map(({ studentCode, nickname, level, unit: studentUnit, weakWords }) => ({
+      students: roster.map(({ studentCode, nickname, level, unit: studentUnit, weakWords }) => ({
         studentCode,
         nickname,
         level,
@@ -129,7 +135,7 @@ export function createApp(opts = {}) {
   app.post("/api/drafts", (req, res, next) => {
     try {
       const { transcript, studentCode } = req.body ?? {};
-      res.status(201).json(publicRecord(store.issue({ transcript, studentCode, unit, students })));
+      res.status(201).json(publicRecord(store.issue({ transcript, studentCode, unit, students: roster })));
     } catch (err) {
       if (err instanceof MoosiSayError) {
         return res.status(errorStatus(err.code)).json({
@@ -190,35 +196,80 @@ export function createApp(opts = {}) {
     if (req.headers["x-demo-synthetic"] !== "true" || req.headers["x-input-role"] !== "adult-teacher") {
       return res.status(400).json({ error: { code: "DECLARATION_REQUIRED", message: "需聲明 X-Demo-Synthetic:true 與 X-Input-Role:adult-teacher。" } });
     }
-    express.raw({ type: ["audio/ogg", "application/ogg"], limit: "2mb" })(req, res, async (parseErr) => {
-      if (parseErr) return next(parseErr);
-      try {
+    const admission = audioAdmission.acquire();
+    if (!admission.accepted) {
+      return res.set("Connection", "close").status(503).json({
+        error: { code: "AUDIO_CAPACITY_EXCEEDED", message: "音訊處理容量已滿，請稍後重試。" },
+      });
+    }
+    let releasePermit;
+    let normalizationStarted = false;
+    const releaseOnce = () => releasePermit?.();
+    const onAborted = () => {
+      if (releasePermit) {
+        if (!normalizationStarted) releaseOnce();
+      } else {
+        admission.cancel();
+      }
+    };
+    req.once("aborted", onAborted);
+    admission.ready.then((release) => {
+      if (!release) {
+        req.off("aborted", onAborted);
+        return;
+      }
+      releasePermit = release;
+      if (req.aborted || res.destroyed) {
+        releaseOnce();
+        req.off("aborted", onAborted);
+        return;
+      }
+      express.raw({ type: ["audio/ogg", "application/ogg"], limit: "2mb" })(req, res, async (parseErr) => {
+        if (parseErr) {
+          releaseOnce();
+          req.off("aborted", onAborted);
+          return next(parseErr);
+        }
         if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+          releaseOnce();
+          req.off("aborted", onAborted);
           return res.status(400).json({ error: { code: "EMPTY_AUDIO", message: "音訊內容不可為空。" } });
         }
-        const { wav, meta } = await normalizeAudio(req.body, {
-          synthetic: true,
-          role: "adult-teacher",
-          ...audioDeps,
-        });
-        const result = await transcribeMock(wav, meta, transcriptionProvider);
-        res.json({
-          transcript: result.transcript,
-          transcriptionIsMock: true,
-          provenance: result.provenance.slice(0, 200),
-          sendsMessages: false,
-          normalization: {
-            sampleRate: meta.sampleRate,
-            channels: meta.channels,
-            bitsPerSample: meta.bitsPerSample,
-            format: "PCM16 WAV",
-            durationSec: meta.durationSec,
-          },
-          warning: "固定模擬逐字稿並非語音辨識；音訊只作本機正規化，請勿上傳真實錄音。",
-        });
-      } catch (err) {
-        next(err);
-      }
+        try {
+          normalizationStarted = true;
+          const { wav, meta } = await normalizeAudio(req.body, {
+            synthetic: true,
+            role: "adult-teacher",
+            ...audioDeps,
+          });
+          releaseOnce();
+          req.off("aborted", onAborted);
+          const result = await transcribeMock(wav, meta, transcriptionProvider);
+          res.json({
+            transcript: result.transcript,
+            transcriptionIsMock: true,
+            provenance: result.provenance.slice(0, 200),
+            sendsMessages: false,
+            normalization: {
+              sampleRate: meta.sampleRate,
+              channels: meta.channels,
+              bitsPerSample: meta.bitsPerSample,
+              format: "PCM16 WAV",
+              durationSec: meta.durationSec,
+            },
+            warning: "固定模擬逐字稿並非語音辨識；音訊只作本機正規化，請勿上傳真實錄音。",
+          });
+        } catch (err) {
+          releaseOnce();
+          req.off("aborted", onAborted);
+          next(err);
+        }
+      });
+    }).catch((err) => {
+      releaseOnce();
+      admission.cancel();
+      req.off("aborted", onAborted);
+      next(err);
     });
   });
 

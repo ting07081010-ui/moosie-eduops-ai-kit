@@ -11,6 +11,7 @@ import {
   generateCard,
   renderCardSvg,
   segmentTranscript,
+  validateStudentRoster,
 } from "../examples/moosi-say-demo/lib/moosi-say.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +26,10 @@ const students = JSON.parse(
 );
 
 const validInput = { transcript: SAMPLE_TRANSCRIPT, studentCode: "S-007", unit, students };
+const duplicateRoster = [
+  { studentCode: "S-007", nickname: "Fixture A", weakWords: ["grapes"] },
+  { studentCode: "S-007", nickname: "Fixture B", weakWords: ["banana"] },
+];
 
 describe("moosi-say demo: valid generation", () => {
   it("unit data holds exactly the allowlisted words and one pattern", () => {
@@ -148,6 +153,24 @@ describe("moosi-say demo: out-of-scope words", () => {
 });
 
 describe("moosi-say demo: roster-backed practice focus", () => {
+  it("rejects duplicate student codes before either profile can be selected", () => {
+    assert.equal(validateStudentRoster(students), students);
+    for (const roster of [duplicateRoster, [...duplicateRoster].reverse()]) {
+      for (const useRoster of [
+        () => generateCard({ ...validInput, students: roster }),
+        () => createStore().issue({ ...validInput, students: roster }),
+      ]) {
+        assert.throws(useRoster, (err) => {
+          assert.ok(err instanceof MoosiSayError);
+          assert.equal(err.code, "DUPLICATE_STUDENT_CODE");
+          assert.match(err.message, /S-007/);
+          assert.deepEqual(err.details.studentCodes, ["S-007"]);
+          return true;
+        });
+      }
+    }
+  });
+
   it("returns a teacher-input draft when the selected student's weak word lacks transcript evidence", () => {
     const store = createStore();
     const draft = store.issue({ ...validInput, studentCode: "S-008" });
@@ -311,6 +334,194 @@ describe("moosi-say demo: hash-bound approval", () => {
       (err) => err.code === "BLOCKED"
     );
   });
+});
+
+const httpFixtureStudents = [
+  {
+    studentCode: "S-007",
+    nickname: "Fixture Student",
+    level: "Beginner",
+    unit: "Unit 5",
+    weakWords: ["grapes"],
+  },
+];
+
+async function withHttpApp(options, run) {
+  const { app } = createApp({ students: httpFixtureStudents, ...options });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.once("listening", resolve);
+  });
+  try {
+    await run(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    await new Promise((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve()))
+    );
+  }
+}
+
+function postJson(base, route, payload) {
+  return fetch(`${base}${route}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+describe("moosi-say demo: HTTP success paths", () => {
+  it("serves the static page and health response with their public content", async () => {
+    await withHttpApp({}, async (base) => {
+      const pageResponse = await fetch(`${base}/`);
+      assert.equal(pageResponse.status, 200);
+      assert.match(pageResponse.headers.get("content-type"), /^text\/html\b/i);
+      const page = await pageResponse.text();
+      assert.match(page, /<h1>Moosi 說 · 課後學習圖卡示範 \(DEMO\)<\/h1>/);
+      assert.match(page, /名冊與弱點詞皆為虛構 synthetic fixture/);
+
+      const healthResponse = await fetch(`${base}/health`);
+      assert.equal(healthResponse.status, 200);
+      assert.match(healthResponse.headers.get("content-type"), /^application\/json\b/i);
+      assert.deepEqual(await healthResponse.json(), {
+        status: "ok",
+        demo: "moosi-say",
+        sendsMessages: false,
+      });
+    });
+  });
+
+  it("retrieves a created draft and renders its SVG over HTTP", async () => {
+    await withHttpApp({}, async (base) => {
+      const createResponse = await postJson(base, "/api/drafts", {
+        transcript: SAMPLE_TRANSCRIPT,
+        studentCode: "S-007",
+      });
+      assert.equal(createResponse.status, 201);
+      const created = await createResponse.json();
+      assert.equal(created.id, "D-001");
+      assert.equal(created.status, "pending");
+
+      const getResponse = await fetch(`${base}/api/drafts/${created.id}`);
+      assert.equal(getResponse.status, 200);
+      assert.match(getResponse.headers.get("content-type"), /^application\/json\b/i);
+      const draft = await getResponse.json();
+      assert.deepEqual(Object.keys(draft).sort(), [
+        "card",
+        "contentHash",
+        "demoNote",
+        "id",
+        "needsTeacherInput",
+        "review",
+        "sendsMessages",
+        "sent",
+        "status",
+      ]);
+      assert.equal(draft.id, created.id);
+      assert.equal(draft.status, "pending");
+      assert.equal(draft.card.studentCode, "S-007");
+      assert.equal(draft.card.practice_focus, "grapes");
+      assert.match(draft.contentHash, /^[0-9a-f]{64}$/);
+      assert.equal(draft.sent, false);
+      assert.equal(draft.sendsMessages, false);
+      assert.equal(draft.needsTeacherInput, false);
+      assert.equal(draft.review, null);
+
+      const svgResponse = await fetch(`${base}/api/drafts/${created.id}/card.svg`);
+      assert.equal(svgResponse.status, 200);
+      assert.match(svgResponse.headers.get("content-type"), /^image\/svg\+xml\b/i);
+      const svg = await svgResponse.text();
+      assert.match(svg, /^<svg\b/);
+      assert.match(svg, /viewBox="0 0 1080 1350"/);
+      assert.ok(svg.includes("S-007") && svg.includes("grapes"));
+      assert.ok(svg.includes("不會實際傳送"));
+    });
+  });
+});
+
+const fakeAudioDeps = {
+  probeFn: async () => Buffer.from(JSON.stringify({
+    streams: [{ codec_type: "audio", codec_name: "opus", duration: "0.001" }],
+    format: { format_name: "ogg", duration: "0.001" },
+  })),
+  spawnFn: async () => ({ stdout: Buffer.from([0, 0]) }),
+};
+
+let timeoutProviderCalls = 0;
+const httpErrorCases = [
+  {
+    code: "OUT_OF_SCOPE",
+    status: 400,
+    request: (base) => postJson(base, "/api/drafts", {
+      studentCode: "S-007",
+      transcript: `${SAMPLE_TRANSCRIPT}\n今天也練習了 orange。`,
+    }),
+  },
+  {
+    code: "UNKNOWN_STUDENT",
+    status: 400,
+    request: (base) => postJson(base, "/api/drafts", {
+      studentCode: "S-999",
+      transcript: SAMPLE_TRANSCRIPT,
+    }),
+  },
+  {
+    code: "NOT_PENDING",
+    status: 409,
+    request: async (base) => {
+      const createdResponse = await postJson(base, "/api/drafts", {
+        studentCode: "S-007",
+        transcript: SAMPLE_TRANSCRIPT,
+      });
+      assert.equal(createdResponse.status, 201);
+      const draft = await createdResponse.json();
+      const approval = {
+        contentHash: draft.contentHash,
+        approvedBy: "teacher",
+      };
+      const firstApproval = await postJson(base, `/api/drafts/${draft.id}/approve`, approval);
+      assert.equal(firstApproval.status, 200);
+      return postJson(base, `/api/drafts/${draft.id}/approve`, approval);
+    },
+  },
+  {
+    code: "PROVIDER_TIMEOUT",
+    status: 504,
+    options: {
+      audioDeps: fakeAudioDeps,
+      transcriptionProvider: () => {
+        timeoutProviderCalls += 1;
+        return new Promise(() => {});
+      },
+    },
+    request: (base) => fetch(`${base}/api/voice/transcribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "audio/ogg",
+        "X-Demo-Synthetic": "true",
+        "X-Input-Role": "adult-teacher",
+      },
+      body: Buffer.from("OggS synthetic fixture"),
+    }),
+    verify: () => assert.equal(timeoutProviderCalls, 1),
+  },
+];
+
+describe("moosi-say demo: HTTP error mappings", () => {
+  for (const scenario of httpErrorCases) {
+    it(`maps ${scenario.code} to HTTP ${scenario.status}`, async () => {
+      timeoutProviderCalls = 0;
+      await withHttpApp(scenario.options ?? {}, async (base) => {
+        const response = await scenario.request(base);
+        assert.equal(response.status, scenario.status);
+        assert.match(response.headers.get("content-type"), /^application\/json\b/i);
+        const body = await response.json();
+        assert.equal(body.error.code, scenario.code);
+        assert.equal(typeof body.error.message, "string");
+        scenario.verify?.();
+      });
+    });
+  }
 });
 
 describe("moosi-say demo: card rendering", () => {

@@ -25,6 +25,19 @@ describe("moosi-say synthetic roster (offline)", () => {
     for (const c of codes) assert.match(c, /^S-\d{3}$/);
   });
 
+  it("rejects duplicate codes at the app roster boundary before serving endpoints", () => {
+    const duplicateRoster = [
+      { studentCode: "S-007", nickname: "Fixture A", weakWords: ["grapes"] },
+      { studentCode: "S-007", nickname: "Fixture B", weakWords: ["banana"] },
+    ];
+    assert.throws(() => createApp({ students: duplicateRoster }), (err) => {
+      assert.equal(err.code, "DUPLICATE_STUDENT_CODE");
+      assert.match(err.message, /S-007/);
+      assert.deepEqual(err.details.studentCodes, ["S-007"]);
+      return true;
+    });
+  });
+
   it("keeps level/unit on Unit 5 and non-empty allowlisted weakWords", () => {
     const allow = new Set(unit.words);
     for (const s of students) {

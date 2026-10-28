@@ -17,6 +17,7 @@ import {
 } from "../examples/moosi-say-demo/lib/audio.mjs";
 import { MoosiSayError, SAMPLE_TRANSCRIPT, createStore } from "../examples/moosi-say-demo/lib/moosi-say.mjs";
 import { createApp } from "../examples/moosi-say-demo/server.mjs";
+import { createAudioAdmissionController } from "../examples/moosi-say-demo/lib/audio-admission.mjs";
 
 // Synthetic oscillator only: never a human voice, network fixture, or saved audio file.
 function syntheticOgg({ duration = 0.25, codec = "libopus", streams = 1 } = {}) {
@@ -283,6 +284,24 @@ async function jsonResponse(response, status) {
   assert.match(response.headers.get("content-type"), /application\/json/);
   return response.json();
 }
+async function waitFor(predicate, message) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (predicate()) return;
+    await new Promise(setImmediate);
+  }
+  assert.fail(message);
+}
+async function fetchPromptly(fetchRequest) {
+  let timer;
+  try {
+    return await Promise.race([
+      fetchRequest(),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Request was not rejected promptly.")), 1000); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 describe("moosi-say audio: localhost HTTP regression", () => {
   it("accepts raw Ogg under both supported MIME types with explicit mock/no-send metadata", async () => {
@@ -306,6 +325,158 @@ describe("moosi-say audio: localhost HTTP regression", () => {
       await jsonResponse(await fetch(`${base}/api/drafts/D-001`), 404);
     });
     assert.equal(calls, 2);
+  });
+
+  it("bounds concurrent normalization, enforces its FIFO queue, and promptly returns 503 when full", async () => {
+    const audioAdmission = createAudioAdmissionController({ maxActive: 2, maxQueued: 1 });
+    const gates = new Map([1, 2, 3].map((id) => [id, deferred()]));
+    const started = new Map([1, 2, 3].map((id) => [id, deferred()]));
+    let active = 0;
+    let maxActive = 0;
+    const send = (base, id) => fetch(`${base}/api/voice/transcribe`, {
+      method: "POST",
+      headers: voiceHeaders,
+      body: Buffer.from(`OggS${id}`),
+    });
+
+    await withApp({
+      audioAdmission,
+      audioDeps: {
+        probeFn: async () => probeResult(),
+        spawnFn: async (_command, _args, input) => {
+          const id = input[4] - 48;
+          active++;
+          maxActive = Math.max(maxActive, active);
+          started.get(id).resolve();
+          try {
+            await gates.get(id).promise;
+            return { stdout: Buffer.alloc(8000) };
+          } finally {
+            active--;
+          }
+        },
+      },
+    }, async (base) => {
+      const first = send(base, 1);
+      await started.get(1).promise;
+      const second = send(base, 2);
+      await started.get(2).promise;
+      const queued = send(base, 3);
+      await waitFor(() => audioAdmission.queuedCount === 1, "The configured queue slot was not occupied.");
+
+      const overflow = await fetchPromptly(() => send(base, 4));
+      const overload = await jsonResponse(overflow, 503);
+      assert.equal(overload.error.code, "AUDIO_CAPACITY_EXCEEDED");
+      assert.equal(maxActive, 2);
+      assert.equal(audioAdmission.queuedCount, 1);
+
+      gates.get(1).resolve();
+      await jsonResponse(await first, 200);
+      await started.get(3).promise;
+      assert.equal(maxActive, 2);
+      gates.get(2).resolve();
+      gates.get(3).resolve();
+      await Promise.all([jsonResponse(await second, 200), jsonResponse(await queued, 200)]);
+      assert.equal(maxActive, 2);
+      assert.equal(audioAdmission.activeCount, 0);
+      assert.equal(audioAdmission.queuedCount, 0);
+    });
+  });
+
+  it("releases permits after injected subprocess failure and timeout so queued normalizations proceed", async () => {
+    for (const [code, status] of [["PROCESS_FAILED", 500], ["PROCESS_TIMEOUT", 504]]) {
+      const audioAdmission = createAudioAdmissionController({ maxActive: 1, maxQueued: 1 });
+      const failure = deferred();
+      const firstStarted = deferred();
+      const queuedStarted = deferred();
+      const send = (base, id) => fetch(`${base}/api/voice/transcribe`, {
+        method: "POST",
+        headers: voiceHeaders,
+        body: Buffer.from(`OggS${id}`),
+      });
+      let active = 0;
+      let maxActive = 0;
+
+      await withApp({
+        audioAdmission,
+        audioDeps: {
+          probeFn: async () => probeResult(),
+          spawnFn: async (_command, _args, input) => {
+            const id = input[4] - 48;
+            active++;
+            maxActive = Math.max(maxActive, active);
+            try {
+              if (id === 1) {
+                firstStarted.resolve();
+                await failure.promise;
+              } else {
+                queuedStarted.resolve();
+              }
+              return { stdout: Buffer.alloc(8000) };
+            } finally {
+              active--;
+            }
+          },
+        },
+      }, async (base) => {
+        const first = send(base, 1);
+        await firstStarted.promise;
+        const queued = send(base, 2);
+        await waitFor(() => audioAdmission.queuedCount === 1, "The recovery request was not queued.");
+
+        failure.reject(new MoosiSayError(code, "private test marker"));
+        const failed = await jsonResponse(await first, status);
+        assert.equal(failed.error.code, code);
+        assert.ok(!JSON.stringify(failed).includes("private test marker"));
+        await queuedStarted.promise;
+        await jsonResponse(await queued, 200);
+        assert.equal(maxActive, 1);
+        assert.equal(audioAdmission.activeCount, 0);
+        assert.equal(audioAdmission.queuedCount, 0);
+      });
+    }
+  });
+
+  it("releases both the active permit and queue slot when queued input is rejected", async () => {
+    const audioAdmission = createAudioAdmissionController({ maxActive: 1, maxQueued: 1 });
+    const gate = deferred();
+    const started = deferred();
+    const send = (base, body) => fetch(`${base}/api/voice/transcribe`, {
+      method: "POST",
+      headers: voiceHeaders,
+      body,
+    });
+
+    await withApp({
+      audioAdmission,
+      audioDeps: {
+        probeFn: async () => probeResult(),
+        spawnFn: async (_command, _args, input) => {
+          if (input[4] === 49) {
+            started.resolve();
+            await gate.promise;
+          }
+          return { stdout: Buffer.alloc(8000) };
+        },
+      },
+    }, async (base) => {
+      const first = send(base, Buffer.from("OggS1"));
+      await started.promise;
+      const rejectedInput = send(base, Buffer.alloc(0));
+      await waitFor(() => audioAdmission.queuedCount === 1, "The invalid input did not occupy the bounded queue.");
+
+      gate.resolve();
+      await jsonResponse(await first, 200);
+      const empty = await jsonResponse(await rejectedInput, 400);
+      assert.equal(empty.error.code, "EMPTY_AUDIO");
+      assert.equal(audioAdmission.activeCount, 0);
+      assert.equal(audioAdmission.queuedCount, 0);
+
+      const recovered = await jsonResponse(await send(base, Buffer.from("OggS3")), 200);
+      assert.equal(recovered.transcriptionIsMock, true);
+      assert.equal(audioAdmission.activeCount, 0);
+      assert.equal(audioAdmission.queuedCount, 0);
+    });
   });
 
   it("rejects headers/type/empty/corrupt/non-Opus/oversize input with JSON and no provider calls", async () => {
@@ -379,8 +550,9 @@ describe("moosi-say audio: localhost HTTP regression", () => {
 
 function deferred() {
   let resolve;
-  const promise = new Promise((done) => { resolve = done; });
-  return { promise, resolve };
+  let reject;
+  const promise = new Promise((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
 }
 const uiReply = (data) => ({ ok: true, json: async () => data });
 async function syntheticUi(request) {

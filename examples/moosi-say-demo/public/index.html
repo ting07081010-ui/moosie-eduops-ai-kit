@@ -77,6 +77,8 @@
 const $ = (id) => document.getElementById(id);
 let current = null;
 let uploadSequence = 0;
+let approvalInFlight = false;
+let transcriptChanged = false;
 
 function invalidatePreview(message = "內容已變更，請重新產生草稿") {
   current = null;
@@ -115,28 +117,35 @@ async function loadContext() {
       $("student").appendChild(opt);
     }
     $("unitInfo").textContent = `單元：${data.unit.title} ${data.unit.topicLabel}｜單字：${data.unit.words.join(", ")}｜句型：${data.unit.sentencePatterns.join(" ")}`;
-    $("transcript").value = data.sampleTranscript;
+    if (!transcriptChanged) $("transcript").value = data.sampleTranscript;
     $("notices").innerHTML = data.notices.map((notice) => `<div>· ${notice}</div>`).join("");
   } catch (err) {
+    $("notices").textContent = "示範資料載入失敗。";
     showError({ error: { code: "CONTEXT_ERROR", message: err.message } });
   }
 }
 
 $("sampleBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
   const sequence = ++uploadSequence;
   invalidatePreview("正在載入範例文字…");
   try {
     const data = await readResponse(await fetch("/api/context"));
     if (sequence !== uploadSequence) return;
     $("transcript").value = data.sampleTranscript;
+    transcriptChanged = true;
     invalidatePreview("已載入範例文字，請重新產生草稿");
     $("error").textContent = "";
   } catch (err) {
-    if (sequence === uploadSequence) showError({ error: { code: "CONTEXT_ERROR", message: err.message } });
+    if (sequence === uploadSequence) {
+      $("status").textContent = "範例文字載入失敗，請重試";
+      showError({ error: { code: "CONTEXT_ERROR", message: err.message } });
+    }
   }
 });
 
 $("draftBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
   const sequence = ++uploadSequence;
   const studentCode = $("student").value;
   const transcript = $("transcript").value;
@@ -150,7 +159,10 @@ $("draftBtn").addEventListener("click", async () => {
     });
     const data = await readResponse(res);
     if (sequence !== uploadSequence) return;
-    if (!res.ok) return showError(data);
+    if (!res.ok) {
+      $("status").textContent = "草稿產生失敗，請重試";
+      return showError(data);
+    }
     current = data;
     if (data.status === "needs_teacher_input") {
       $("status").textContent = `需要老師補充證據（${data.id}）`;
@@ -169,37 +181,55 @@ $("draftBtn").addEventListener("click", async () => {
     $("cardJson").hidden = false;
     $("approveBtn").disabled = false;
   } catch (err) {
-    if (sequence === uploadSequence) showError({ error: { code: "REQUEST_FAILED", message: err.message } });
+    if (sequence === uploadSequence) {
+      $("status").textContent = "草稿產生失敗，請重試";
+      showError({ error: { code: "REQUEST_FAILED", message: err.message } });
+    }
   }
 });
 
 $("approveBtn").addEventListener("click", async () => {
-  if (!current || current.status !== "pending" || !current.card) return;
+  if (approvalInFlight || !current || current.status !== "pending" || !current.card) return;
   const approvedDraft = current;
-  const sequence = uploadSequence;
-  $("approveBtn").disabled = true;
+  const approvedBy = $("approver").value;
+  const statusBeforeApproval = $("status").textContent;
+  const guardedControls = ["student", "transcript", "sampleBtn", "draftBtn", "voiceFile", "ackSynthetic", "voiceBtn", "approver"];
+  const disabledBeforeApproval = new Map(guardedControls.map((id) => [id, $(id).disabled]));
+  const approveButton = $("approveBtn");
+  const approveButtonLabel = approveButton.textContent;
+  approvalInFlight = true;
+  for (const id of guardedControls) $(id).disabled = true;
+  approveButton.disabled = true;
+  approveButton.textContent = "核准中…";
+  $("status").textContent = `正在核准（${approvedDraft.id}）…`;
   $("error").textContent = "";
   try {
     const res = await fetch(`/api/drafts/${approvedDraft.id}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentHash: approvedDraft.contentHash, approvedBy: $("approver").value }),
+      body: JSON.stringify({ contentHash: approvedDraft.contentHash, approvedBy }),
     });
     const data = await readResponse(res);
-    if (sequence !== uploadSequence || current?.id !== approvedDraft.id) return;
-    if (!res.ok) return showError(data);
+    if (!res.ok) {
+      $("status").textContent = statusBeforeApproval;
+      showError(data);
+      return;
+    }
     current = data;
     $("status").textContent = `已核准（${data.id}，${data.approvedBy}）· 本地示範狀態，未傳送`;
   } catch (err) {
-    if (sequence === uploadSequence) showError({ error: { code: "REQUEST_FAILED", message: err.message } });
+    $("status").textContent = statusBeforeApproval;
+    showError({ error: { code: "REQUEST_FAILED", message: err.message } });
   } finally {
-    if (sequence === uploadSequence && current?.id === approvedDraft.id && current.status === "pending") {
-      $("approveBtn").disabled = false;
-    }
+    approvalInFlight = false;
+    for (const [id, disabled] of disabledBeforeApproval) $(id).disabled = disabled;
+    approveButton.textContent = approveButtonLabel;
+    if (current?.id === approvedDraft.id && current.status === "pending") approveButton.disabled = false;
   }
 });
 
 $("voiceFile").addEventListener("change", () => {
+  if (approvalInFlight) return;
   uploadSequence++;
   $("ackSynthetic").checked = false;
   $("voiceMeta").textContent = "";
@@ -208,16 +238,20 @@ $("voiceFile").addEventListener("change", () => {
 });
 
 $("student").addEventListener("change", () => {
+  if (approvalInFlight) return;
   uploadSequence++;
   invalidatePreview("學生已變更，請重新產生草稿");
 });
 
 $("transcript").addEventListener("input", () => {
+  if (approvalInFlight) return;
+  transcriptChanged = true;
   uploadSequence++;
   invalidatePreview("逐字稿已變更，請重新產生草稿");
 });
 
 $("voiceBtn").addEventListener("click", async () => {
+  if (approvalInFlight) return;
   const file = $("voiceFile").files[0];
   if (!file) { $("voiceWarn").textContent = "請選擇自行生成的 OGG 合成測試音訊；不可使用真實錄音。"; return; }
   if (!$("ackSynthetic").checked) { $("voiceWarn").textContent = "請先確認這是合成測試音訊。"; return; }
@@ -243,6 +277,7 @@ $("voiceBtn").addEventListener("click", async () => {
     if (!res.ok) throw new Error(`錯誤 [${data.error?.code ?? "REQUEST_FAILED"}] ${data.error?.message ?? "請求失敗。"}`);
     if (sequence !== uploadSequence || studentAtStart !== $("student").value || transcriptAtStart !== $("transcript").value) return;
     $("transcript").value = data.transcript;
+    transcriptChanged = true;
     invalidatePreview("已載入固定模擬逐字稿，請確認並重新產生草稿");
     $("voiceMeta").textContent = `本機正規化：${data.normalization.sampleRate} Hz、${data.normalization.channels} 聲道、${data.normalization.bitsPerSample}-bit PCM16 WAV；長度 ${data.normalization.durationSec} 秒。固定 mock：${data.transcriptionIsMock}；傳送訊息：${data.sendsMessages}。`;
     $("voiceWarn").textContent = data.warning;

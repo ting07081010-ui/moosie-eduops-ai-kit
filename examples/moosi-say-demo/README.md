@@ -8,7 +8,7 @@
 
 ## 執行
 
-需要 Node.js、專案相依套件；音訊功能另需 PATH 中有本機 `ffmpeg` 與 `ffprobe`。
+需要 Node.js `20.12.0+`（Node 20）、`21.7.0+`（Node 21）或 Node 22+，以及專案相依套件；音訊功能另需 PATH 中有本機 `ffmpeg` 與 `ffprobe`。
 
 ```bash
 npm install
@@ -19,7 +19,7 @@ npm run demo:moosi-say
 ```
 
 預設只綁定 `127.0.0.1`。直接執行時 `HOST` 只允許 `127.0.0.1`、`::1` 或 `localhost`；其他值會拒絕啟動。
-`PORT` 可覆寫。這不是部署或正式服務；沒有生產環境身份驗證。
+`npm run demo:moosi-say` 會在啟動前載入專案根目錄 `.env`（可設定 `HOST`、`PORT`）；shell 已設定的值優先。這不是部署或正式服務；沒有生產環境身份驗證。
 
 ## 操作流程
 

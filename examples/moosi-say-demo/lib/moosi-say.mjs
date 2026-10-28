@@ -33,6 +33,34 @@ export class MoosiSayError extends Error {
   }
 }
 
+/** Validate the roster shape and reject duplicate student codes before lookup. */
+export function validateStudentRoster(students) {
+  if (!Array.isArray(students)) {
+    throw new MoosiSayError("INVALID_ROSTER", "學生名冊格式無效，必須是學生清單。");
+  }
+
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const student of students) {
+    if (!student || typeof student !== "object" || Array.isArray(student) ||
+        typeof student.studentCode !== "string") {
+      throw new MoosiSayError("INVALID_ROSTER", "學生名冊包含格式無效的學生資料。");
+    }
+    if (seen.has(student.studentCode)) duplicates.add(student.studentCode);
+    seen.add(student.studentCode);
+  }
+
+  if (duplicates.size > 0) {
+    const studentCodes = [...duplicates];
+    throw new MoosiSayError(
+      "DUPLICATE_STUDENT_CODE",
+      `學生名冊包含重複代號（${studentCodes.join("、")}），請修正合成名冊後再使用。`,
+      { studentCodes }
+    );
+  }
+  return students;
+}
+
 /** Sample classroom note. Typed transcript for demo input — not speech recognition. */
 export const SAMPLE_TRANSCRIPT = [
   "S-007 在 Unit 5 水果課上能說出 apple 和 banana，grapes 的字首 g 還需要多練習。",
@@ -127,7 +155,8 @@ export function generateCard({ transcript, studentCode, unit, students }) {
   if (!/^S-\d{3}$/.test(String(studentCode || ""))) {
     throw new MoosiSayError("INVALID_CODE", "學生代號格式錯誤，應為 S-XXX。");
   }
-  const student = (students || []).find((s) => s.studentCode === studentCode);
+  const roster = validateStudentRoster(students);
+  const student = roster.find((s) => s.studentCode === studentCode);
   if (!student) {
     throw new MoosiSayError(
       "UNKNOWN_STUDENT",
