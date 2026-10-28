@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moosie EduOps AI Kit｜專案導覽與 Moosi 說流程示意</title>
+<meta name="description" content="Moosie EduOps AI Kit 專案導覽：以合成資料說明草稿產生與老師核准流程，區分工具組與離線 Moosi 說 demo，本網站不收集輸入。">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#2f6b4f">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<script src="assets/showcase.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要內容</a>
+<p class="site-banner" role="note">網站流程示意｜不是即時 AI，也不是正式服務</p>
+<header class="site-header">
+<nav class="site-nav" aria-label="站內導覽">
+<a class="brand" href="#top">Moosie EduOps AI Kit</a>
+<ul>
+<li><a href="#flow">Moosi 說流程</a></li>
+<li><a href="#workflows">其他工作流</a></li>
+<li><a href="#line">LINE demo</a></li>
+<li><a href="#privacy">隱私與邊界</a></li>
+<li><a href="#audio">音訊說明</a></li>
+<li><a href="#docs">文件與參與</a></li>
+</ul>
+</nav>
+<div class="hero" id="top">
+<h1>Moosie EduOps AI Kit</h1>
+<p class="subtitle">用合成資料示範：AI 與規則工具只產生草稿，最後由老師決定要不要用。</p>
+<ul class="safety-labels" aria-label="重要限制">
+<li>合成資料</li>
+<li>輸出皆為草稿</li>
+<li>不會傳送訊息</li>
+<li>本網站不收集輸入</li>
+</ul>
+<p class="cta-row">
+<a class="cta" href="#flow">看 Moosi 說流程</a>
+<a class="cta cta-secondary" href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit" rel="noopener">查看 GitHub 專案<span aria-hidden="true">↗</span></a>
+</p>
+</div>
+</header>
+<main id="main">
+<section aria-labelledby="position-heading">
+<h2 id="position-heading">這是什麼專案</h2>
+<p>Moosie EduOps AI Kit 是一套開源參考工具組，提供可重用的 prompts、JSON schemas、合成資料、CLI 與 LINE demo、evals 評估與隱私處理模式。它是早期、可在本機執行的參考專案，幫小型教育團隊看見「草稿先行、老師最後決定」的工作方式，不是通用家教 app、校務管理系統，也不是完整產品或正式服務。</p>
+<p>同一專案裡有一個離線規則式示範「Moosi 說」：把老師打字的課後紀錄變成課後英語學習圖卡草稿。下面用一個固定合成案例，把它的資料來源、規則檢查與人工核准走一遍。</p>
+</section>
+<section aria-labelledby="flow-heading" id="flow">
+<h2 id="flow-heading">Moosi 說流程（固定合成案例）</h2>
+<p>本區全部內容都是固定的合成展示，沒有即時生成，也不會傳送任何訊息。各步驟狀態皆為「靜態流程示意」。</p>
+<p id="showcase-status" class="status-line" role="status" aria-live="polite"></p>
+<div class="flow-controls" data-flow-controls>
+<button type="button" hidden aria-expanded="true" aria-controls="flow-step-1">步驟一：合成老師紀錄</button>
+<button type="button" hidden aria-expanded="false" aria-controls="flow-step-2">步驟二：規則檢查</button>
+<button type="button" hidden aria-expanded="false" aria-controls="flow-step-3">步驟三：圖卡草稿</button>
+<button type="button" hidden aria-expanded="false" aria-controls="flow-step-4">步驟四：人工核准</button>
+</div>
+<section aria-labelledby="flow-step-1-heading" id="flow-step-1" data-step-panel>
+<h3 id="flow-step-1-heading">步驟一：合成老師紀錄 <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>teacher_input</code> · 合成示例</span></h3>
+<div data-panel-body>
+<p>固定案例學生：S-007，暱稱 Sunny，程度 Beginner，單元 Unit 5，名冊弱詞 <code>["grapes"]</code>。弱詞是虛構 fixture 欄位，用來讓離線示範選練習焦點，不是診斷，也不是模型推論。</p>
+<p>Unit 5 水果課白名單：apple、banana、grapes；句型：<code>I want some {fruit}, please.</code></p>
+<p>老師打字紀錄（逐字取自 demo 來源 <code>SAMPLE_TRANSCRIPT</code>）：</p>
+<blockquote>
+<p>S-007 在 Unit 5 水果課上能說出 apple 和 banana，grapes 的字首 g 還需要多練習。<br>請媽媽在家陪 S-007 玩買水果遊戲，練習說 I want some grapes, please。</p>
+</blockquote>
+</div>
+</section>
+<section aria-labelledby="flow-step-2-heading" id="flow-step-2" data-step-panel>
+<h3 id="flow-step-2-heading">步驟二：規則檢查 <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>checking</code> · 規則比對，不是 AI</span></h3>
+<div data-panel-body>
+<ul>
+<li>白名單檢查：逐字稿裡的每個英文單字都必須在允許範圍內（單元單字、句型用字或少數明確列出的附加字），超出範圍就整份退回。</li>
+<li>弱詞檢查：練習焦點必須來自所選學生的名冊弱詞（這裡是 grapes），而且同一分句要有明確的練習提示（例如「還需要多練習」），只提到單字不算數。</li>
+<li>證據檢查：成功產生的圖卡每一個欄位（<code>key_words</code>、<code>sentence</code>、<code>weak_point_zh</code>、<code>home_mission_zh</code>）都要有對應 evidence，其段落 ID 如 <code>T-01</code>、<code>T-02</code>；缺任何一項就退回補充。</li>
+</ul>
+</div>
+</section>
+<section aria-labelledby="flow-step-3-heading" id="flow-step-3" data-step-panel>
+<h3 id="flow-step-3-heading">步驟三：圖卡草稿 <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>pending</code> · 草稿</span></h3>
+<div data-panel-body>
+<div class="step-card-split">
+<div class="step-text">
+<p>通過檢查後，demo 以固定樣板規則產生 4:5 圖卡草稿（viewBox <code>1080x1350</code>），固定樣板規則產生，不是 AI 生成。demo 會為圖卡內容計算 SHA-256 內容雜湊（此處不列出雜湊值），並附上來源寫法：樣板規則產生的示範草稿，不是 AI 生成，也沒有使用語音辨識。</p>
+</div>
+<div class="card-preview">
+<svg viewBox="0 0 1080 1350" role="img" aria-labelledby="card-title card-desc">
+<title id="card-title">Moosi 說課後學習圖卡預覽</title>
+<desc id="card-desc">固定合成示例：S-007 的 Unit 5 水果課圖卡草稿，固定版式合成預覽，樣板規則產生，不是 AI 生成，不會傳送。</desc>
+<rect x="0" y="0" width="1080" height="1350" rx="48" fill="#fffaf0"></rect>
+<rect x="0" y="0" width="1080" height="220" rx="48" fill="#2f6b4f"></rect>
+<text x="80" y="100" font-size="52" font-weight="700" fill="#ffffff">Moosi 說 · 課後學習圖卡</text>
+<text x="80" y="165" font-size="32" fill="#dcefe2">S-007 · Unit 5 水果課 · DEMO 預覽</text>
+<circle cx="920" cy="300" r="40" fill="#c98d5e"></circle>
+<ellipse cx="920" cy="390" rx="55" ry="65" fill="#c98d5e"></ellipse>
+<text x="920" y="490" text-anchor="middle" font-size="26" fill="#8a5a33">Moosi 吉祥物示意</text>
+<text x="80" y="540" font-size="40" font-weight="700" fill="#2f6b4f">今天學了什麼</text>
+<text x="80" y="580" font-size="32" fill="#1f2a24">S-007 在 Unit 5 水果課<tspan x="80" dy="40">能說出 apple、banana，</tspan><tspan x="80" dy="40">grapes 的字首 g 需要多練習。</tspan></text>
+<text x="80" y="720" font-size="40" font-weight="700" fill="#2f6b4f">本單元單字</text>
+<g font-size="40" font-weight="700" fill="#7a4a12" text-anchor="middle">
+<rect x="80" y="740" width="270" height="80" rx="40" fill="#fff4de" stroke="#e8a13d" stroke-width="4"></rect>
+<text x="215" y="792">apple</text>
+<rect x="370" y="740" width="270" height="80" rx="40" fill="#fff4de" stroke="#e8a13d" stroke-width="4"></rect>
+<text x="505" y="792">banana</text>
+<rect x="660" y="740" width="270" height="80" rx="40" fill="#fff4de" stroke="#e8a13d" stroke-width="4"></rect>
+<text x="795" y="792">grapes</text>
+</g>
+<text x="80" y="880" font-size="40" font-weight="700" fill="#2f6b4f">本單元句型</text>
+<rect x="80" y="900" width="920" height="80" rx="24" fill="#eef6ef" stroke="#2f6b4f" stroke-width="4"></rect>
+<text x="120" y="952" font-size="38" font-weight="700" fill="#1e4633">I want some grapes, please.</text>
+<text x="80" y="1030" font-size="40" font-weight="700" fill="#2f6b4f">多練一下</text>
+<text x="80" y="1072" font-size="32" fill="#1f2a24">grapes 的字首 g 發音需要多練習</text>
+<text x="80" y="1122" font-size="40" font-weight="700" fill="#2f6b4f">在家這樣陪練</text>
+<text x="80" y="1162" font-size="32" fill="#1f2a24">在家玩一分鐘買水果遊戲：<tspan x="80" dy="40">輪流說出 I want some grapes, please.</tspan></text>
+<text x="80" y="1255" font-size="24" fill="#5a6560">欄位 key_words・sentence・weak_point_zh・</text>
+<text x="80" y="1290" font-size="24" fill="#5a6560">home_mission_zh 皆有逐字稿證據（T-01／T-02）</text>
+<text x="80" y="1325" font-size="24" fill="#5a6560">固定版式合成預覽，不會實際傳送</text>
+</svg>
+</div>
+</div>
+<p class="footnote">固定版式合成預覽：為完整呈現所有欄位，版式經調整，非 demo 匯出原檔；欄位文字與來源一致，此處不列出雜湊值。</p>
+</div>
+</section>
+<section aria-labelledby="flow-step-4-heading" id="flow-step-4" data-step-panel>
+<h3 id="flow-step-4-heading">步驟四：人工核准 <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>approved</code> · <code>sent: false</code>，不會傳送</span></h3>
+<div data-panel-body>
+<p>只有老師或管理員能核准，AI 不能核准。核准時後端用當下卡片內容重新計算雜湊並比對：缺少雜湊、雜湊不符、尚缺逐字稿證據、重複核准都會被拒絕。來源寫法例如：「這份草稿尚缺逐字稿證據，不能核准；請補充老師觀察後重新產生。」、「核准需要附上圖卡內容雜湊，缺少雜湊不能核准。」、「內容雜湊不符，圖卡可能已被修改，不能核准；請重新預覽後再核准。」</p>
+<p>核准只改變本機草稿狀態（<code>sent: false</code>），不會傳送訊息給家長，也不會寫入其他系統。</p>
+</div>
+</section>
+<section aria-labelledby="flow-demo-heading" id="flow-demo">
+<h3 id="flow-demo-heading">在本機操作文字流程 demo</h3>
+<p>上面四步是固定合成展示；要親手操作真正的 demo，請看 <a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/examples/moosi-say-demo/README.md" rel="noopener">Moosi 說 demo 操作說明<span aria-hidden="true">↗</span></a>。文字流程需要 Node.js <code>20.12.0+</code>（Node 20）、<code>21.7.0+</code>（Node 21）或 Node 22+；在本機執行 <code>npm run demo:moosi-say</code> 後開啟 <code>http://127.0.0.1:3107</code>（預設只綁定 <code>127.0.0.1</code> loopback）。<code>ffmpeg</code> 與 <code>ffprobe</code> 只在音訊功能需要，打字的文字流程不需要它們。</p>
+</section>
+</section>
+<section aria-labelledby="counter-heading" id="counter">
+<h2 id="counter-heading">兩個固定反例</h2>
+<p>以下兩個反例的文字皆逐字取自 demo 程式碼與輸出，沒有改寫。狀態皆為「靜態流程示意」。</p>
+<p id="rejection-status" class="status-line" role="status" aria-live="polite"></p>
+<div class="flow-controls" data-rejection-controls>
+<button type="button" hidden aria-expanded="true" aria-controls="counter-1">反例一：證據不足</button>
+<button type="button" hidden aria-expanded="false" aria-controls="counter-2">反例二：超綱單字</button>
+</div>
+<section aria-labelledby="counter-1-heading" id="counter-1" data-step-panel>
+<h3 id="counter-1-heading">反例一：證據不足 <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>needs_teacher_input</code> · 需老師補充證據</span></h3>
+<div data-panel-body>
+<p>這份逐字稿提到了全部單元單字，但對 grapes 沒有明確的練習提示（只說「能說出」，沒有「還需要練習」這類觀察）：</p>
+<blockquote>
+<p>S-007 在 Unit 5 水果課上能說出 apple、banana 和 grapes。<br>請媽媽在家陪 S-007 玩買水果遊戲，練習說 I want some grapes, please。</p>
+</blockquote>
+<p>結果狀態為 <code>needs_teacher_input</code>，demo 回傳老師可讀訊息：「逐字稿沒有明確記錄名冊弱詞（grapes）需要練習；已交回老師補充觀察後再產生圖卡。」不產生圖卡、沒有內容雜湊、沒有可核准物件，請老師補充觀察後重新產生。</p>
+</div>
+</section>
+<section aria-labelledby="counter-2-heading" id="counter-2" data-step-panel>
+<h3 id="counter-2-heading">反例二：超綱單字 orange <span class="state-tag">靜態流程示意</span> <span class="state-tag">狀態 <code>rejected</code> · 退回</span></h3>
+<div data-panel-body>
+<p>逐字稿在固定範例後多了一句「今天也練習了 orange。」orange 不在 Unit 5 白名單內：</p>
+<p>demo 回傳錯誤訊息：「紀錄中有本單元以外的英文單字（orange），已退回，不會產生圖卡。」狀態為 rejected／退回，不產生圖卡。</p>
+</div>
+</section>
+</section>
+<section aria-labelledby="gate-heading" id="approval-gate">
+<h2 id="gate-heading">另一條路：其他 LLM 工作流的審核閘門</h2>
+<p>專案裡其他 LLM 工作流用的是 <code>src/core/approval-gate.mjs</code> 的 <code>createDraft</code> → <code>approveDraft</code> → <code>outgoingText</code>：草稿先是待核准，一定要人類老師或管理員核准才算通過；風險檢查判為 <code>block</code> 的草稿不能核准。這和 Moosi 說規則式雜湊綁定本機核准不是同一條路。已核准的 LLM 草稿是「可以產生對外文字」的狀態，不代表那些訊息永遠不會送出；實際是否送出要看各工作流與 provider 設定。程式來源：<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/src/core/approval-gate.mjs" rel="noopener">approval-gate.mjs<span aria-hidden="true">↗</span></a>。</p>
+</section>
+<section aria-labelledby="workflows-heading" id="workflows">
+<h2 id="workflows-heading">工具組其他工作流</h2>
+<p>以下卡片各用一句話說明既有內容，狀態沿用專案自述；都不代表已經產品化。</p>
+<ul class="cards">
+<li><h3>老師筆記轉結構化紀錄 <span class="state-tag">Stable</span></h3><p>把老師課後文字整理成固定欄位的課程紀錄。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/prompts/teacher-after-class-note.md" rel="noopener">提示模板<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>每週家長摘要 <span class="state-tag">Stable</span></h3><p>由課程紀錄起草給家長看的每週摘要，仍需人工審核。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/prompts/parent-weekly-summary.md" rel="noopener">提示模板<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>家長訊息隱私與風險檢查 <span class="state-tag">Stable</span></h3><p>檢查草稿有無個資外洩、跨學生串料或過度承諾。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/prompts/parent-message-risk-check.md" rel="noopener">提示模板<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>行政任務擷取 <span class="state-tag">Stable</span></h3><p>從老師或行政訊息中整理出待辦事項與負責人。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/prompts/admin-task-router.md" rel="noopener">提示模板<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>Prompt 評估 <span class="state-tag">Stable</span></h3><p>用固定 eval 題本與評分規準檢查輸出品質與隱私風險。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/evals/output-quality-rubric.md" rel="noopener">評分規準<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>JSON schemas <span class="state-tag">Stable</span></h3><p>課程紀錄、家長訊息等四種結構的欄位規格。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/tree/main/schemas" rel="noopener">schema 目錄<span aria-hidden="true">↗</span></a></p></li>
+<li><h3>批次處理 <span class="state-tag">Experimental</span></h3><p>一次處理資料夾內多筆合成課程紀錄，仍在試驗階段。<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/README.md" rel="noopener">使用方式見 README<span aria-hidden="true">↗</span></a></p></li>
+</ul>
+</section>
+<section aria-labelledby="line-heading" id="line">
+<h2 id="line-heading">LINE demo：兩條不能互換的路</h2>
+<p><span class="state-tag">Experimental</span> 兩者都只供本機測試，需要在專案根目錄 <code>.env</code> 設定 <code>OPENAI_API_KEY</code>、<code>LINE_CHANNEL_ACCESS_TOKEN</code>、<code>LINE_CHANNEL_SECRET</code>。本網站本身不連接 LINE。</p>
+<div class="two-col">
+<section aria-labelledby="line-quick-heading">
+<h3 id="line-quick-heading">Quick reply 整合</h3>
+<p>指令：<code>npm run line:quick-reply</code>（舊名 <code>npm run line</code> 是同一個伺服器的別名）。傳一般文字的課後紀錄，再用 5 個 quick reply 操作：<code>generate_summary</code>、<code>check_risk</code>、<code>extract_tasks</code>、<code>generate_practice</code>、<code>list_yellow_students</code>。它不處理斜線指令。</p>
+</section>
+<section aria-labelledby="line-slash-heading">
+<h3 id="line-slash-heading">Slash-command demo</h3>
+<p>指令：<code>npm run line:slash-demo</code>（舊名 <code>npm run line:demo</code> 是同一個伺服器的別名）。接受三個文字指令：<code>/summary {json}</code>、<code>/risk &lt;text&gt;</code>、<code>/task {json}</code>。說明見 <a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/examples/line-webhook-demo/README.md" rel="noopener">slash-command demo 說明<span aria-hidden="true">↗</span></a>。</p>
+</section>
+</div>
+</section>
+<section aria-labelledby="privacy-heading" id="privacy">
+<h2 id="privacy-heading">隱私、安全與人工作業邊界</h2>
+<ul class="safety-labels" aria-label="隱私標籤">
+<li>範例使用合成資料</li>
+<li>輸出是草稿</li>
+<li>家長訊息需人工審核</li>
+<li>網站程式不收集、不儲存、不傳送任何輸入</li>
+</ul>
+<p>其他 LLM 工作流會把內容送到你設定的 provider（Claude 或 OpenAI）。送出前先去識別化，例如用 S-001 這類代號，不要送姓名、電話、地址、學校或家長聯絡方式，並先看過 provider 的資料處理條款。不要把「Moosi 說離線 demo 不呼叫外部模型」外推成專案裡所有流程都不外傳資料。</p>
+<p>以上只是專案已實作做法的說明，不是法律或合規承諾；部署的人要自己負責取得適當同意、設定保留政策，並在需要時尋求在地法律意見。</p>
+<p class="footnote">註：託管平台可能依其政策保留一般存取紀錄；點出去的外部連結適用目標網站的政策。相關文件：<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/PRIVACY.md" rel="noopener">PRIVACY.md<span aria-hidden="true">↗</span></a>、<a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/docs/privacy-and-minors.md" rel="noopener">未成年人資料處理說明<span aria-hidden="true">↗</span></a>。</p>
+</section>
+<section aria-labelledby="audio-heading" id="audio">
+<h2 id="audio-heading">音訊功能說明（純文字，無上傳）</h2>
+<p>本網站沒有上傳按鈕，也沒有音訊播放控制。既有 demo 的音訊路徑只收自行生成的合成 Ogg／Opus 音調，在本機用 ffmpeg 正規化為 16 kHz 單聲道 PCM16 WAV；之後回傳的逐字稿是固定 mock 範例，和音訊內容無關，不是語音辨識。輸入上限 2 MiB、最長 60 秒。合成與成人老師聲明只是該 demo 的使用限制，不是身份或來源驗證。<strong>不得選取或上傳真人錄音，尤其不得使用兒童音訊。</strong>ffmpeg 與 ffprobe 只是音訊功能的額外需求，打字的文字 demo 不需要它們。</p>
+</section>
+<section aria-labelledby="docs-heading" id="docs">
+<h2 id="docs-heading">文件與參與方式</h2>
+<ul>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit" rel="noopener">GitHub 專案<span aria-hidden="true">↗</span></a></li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/README.md" rel="noopener">根 README<span aria-hidden="true">↗</span></a>（含 Quick Start：安裝、設定、CLI、evals 的執行方式，直達 <a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/README.md#quick-start" rel="noopener">Quick Start<span aria-hidden="true">↗</span></a>）</li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/examples/moosi-say-demo/README.md" rel="noopener">Moosi 說 demo 操作說明：本機啟動真正的互動 demo<span aria-hidden="true">↗</span></a>（<code>npm run demo:moosi-say</code>，版本需求見該 README）</li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/CONTRIBUTING.md" rel="noopener">CONTRIBUTING.md<span aria-hidden="true">↗</span></a></li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/SECURITY.md" rel="noopener">SECURITY.md（安全問題回報）<span aria-hidden="true">↗</span></a></li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/labels/good%20first%20issue" rel="noopener">good first issue<span aria-hidden="true">↗</span></a></li>
+<li><a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit/blob/main/LICENSE" rel="noopener">MIT 授權<span aria-hidden="true">↗</span></a></li>
+</ul>
+</section>
+</main>
+<footer class="site-footer">
+<p>Moosie EduOps AI Kit 專案導覽 · 靜態流程示意，不收集輸入 · <a href="https://github.com/ting07081010-ui/moosie-eduops-ai-kit" rel="noopener">GitHub<span aria-hidden="true">↗</span></a></p>
+</footer>
+</body>
+</html>

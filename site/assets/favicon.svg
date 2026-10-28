@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Moosie EduOps AI Kit 示意圖示">
+<title>Moosie EduOps AI Kit</title>
+<rect x="2" y="2" width="60" height="60" rx="14" fill="#f4f1ea"/>
+<rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#2f6b4f" stroke-width="4"/>
+<circle cx="32" cy="26" r="10" fill="#2f6b4f"/>
+<ellipse cx="32" cy="46" rx="14" ry="9" fill="#c98d5e"/>
+<rect x="18" y="42" width="28" height="6" rx="3" fill="#fff4de" stroke="#e8a13d" stroke-width="2"/>
+</svg>
