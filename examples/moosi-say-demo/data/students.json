@@ -4,6 +4,7 @@
     "nickname": "Sunny",
     "level": "Beginner",
     "unit": "Unit 5",
+    "weakWords": ["grapes"],
     "privacyNote": "Synthetic demo student. No real student data."
   },
   {
@@ -11,6 +12,7 @@
     "nickname": "Cloud",
     "level": "Beginner",
     "unit": "Unit 5",
+    "weakWords": ["banana"],
     "privacyNote": "Synthetic demo student. No real student data."
   },
   {
@@ -18,6 +20,63 @@
     "nickname": "River",
     "level": "Beginner",
     "unit": "Unit 5",
+    "weakWords": ["apple"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-010",
+    "nickname": "Pebble",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["apple", "grapes"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-011",
+    "nickname": "Moss",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["banana"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-012",
+    "nickname": "Driftwood",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["grapes"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-013",
+    "nickname": "Lantern",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["apple"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-014",
+    "nickname": "Willow",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["banana", "grapes"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-015",
+    "nickname": "Coral",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["apple", "banana"],
+    "privacyNote": "Synthetic demo student. No real student data."
+  },
+  {
+    "studentCode": "S-016",
+    "nickname": "Starfish",
+    "level": "Beginner",
+    "unit": "Unit 5",
+    "weakWords": ["grapes"],
     "privacyNote": "Synthetic demo student. No real student data."
   }
 ]

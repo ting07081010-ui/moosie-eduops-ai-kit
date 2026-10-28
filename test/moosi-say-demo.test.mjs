@@ -15,6 +15,7 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createApp } from "../examples/moosi-say-demo/server.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const demoRoot = path.join(__dirname, "..", "examples", "moosi-say-demo");
@@ -143,6 +144,88 @@ describe("moosi-say demo: out-of-scope words", () => {
       })
     );
     assert.throws(() => store.get("D-001"), (err) => err.code === "NOT_FOUND");
+  });
+});
+
+describe("moosi-say demo: roster-backed practice focus", () => {
+  it("returns a teacher-input draft when the selected student's weak word lacks transcript evidence", () => {
+    const store = createStore();
+    const draft = store.issue({ ...validInput, studentCode: "S-008" });
+
+    assert.equal(draft.status, "needs_teacher_input");
+    assert.equal(draft.card, null);
+    assert.equal(draft.review.code, "MISSING_FOCUS_EVIDENCE");
+    assert.deepEqual(draft.review.focusCandidates, ["banana"]);
+    assert.throws(
+      () => store.approve(draft.id, { contentHash: draft.contentHash, approvedBy: "teacher" }),
+      (err) => err.code === "NEEDS_TEACHER_INPUT"
+    );
+  });
+
+  it("returns a teacher-input draft when a required curriculum word has no transcript evidence", () => {
+    const transcript = SAMPLE_TRANSCRIPT.replace("apple 和 banana，", "apple，");
+    const draft = createStore().issue({ ...validInput, transcript });
+
+    assert.equal(draft.status, "needs_teacher_input");
+    assert.equal(draft.card, null);
+    assert.equal(draft.review.code, "MISSING_EVIDENCE");
+    assert.deepEqual(draft.review.missing, ["banana"]);
+  });
+
+  it("chooses an evidence-backed weak word from the selected student's roster", () => {
+    const draft = createStore().issue({ ...validInput, studentCode: "S-010" });
+
+    assert.equal(draft.status, "pending");
+    assert.equal(draft.card.practice_focus, "grapes");
+    assert.deepEqual(
+      draft.card.evidence.find((item) => item.field === "weak_point_zh").segmentIds,
+      ["T-01"]
+    );
+  });
+
+  it("uses a roster weak word once the teacher adds explicit transcript evidence", () => {
+    const transcript = `${SAMPLE_TRANSCRIPT.replaceAll("S-007", "S-008")}\nbanana 還需要多練習。`;
+    const draft = createStore().issue({ ...validInput, transcript, studentCode: "S-008" });
+
+    assert.equal(draft.status, "pending");
+    assert.equal(draft.card.practice_focus, "banana");
+    assert.ok(draft.card.evidence.find((item) => item.field === "weak_point_zh").segmentIds.length > 0);
+  });
+});
+
+describe("moosi-say demo: teacher-input API guard", () => {
+  it("returns an unresolved record and blocks preview/approval when focus evidence is missing", async () => {
+    const { app } = createApp();
+    const server = app.listen(0, "127.0.0.1");
+    await new Promise((resolve) => server.on("listening", resolve));
+    try {
+      const base = `http://127.0.0.1:${server.address().port}`;
+      const created = await fetch(`${base}/api/drafts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentCode: "S-008", transcript: SAMPLE_TRANSCRIPT }),
+      });
+      assert.equal(created.status, 201);
+      const draft = await created.json();
+      assert.equal(draft.status, "needs_teacher_input");
+      assert.equal(draft.needsTeacherInput, true);
+      assert.equal(draft.card, null);
+      assert.equal(draft.contentHash, null);
+
+      const preview = await fetch(`${base}/api/drafts/${draft.id}/card.svg`);
+      assert.equal(preview.status, 409);
+      assert.equal((await preview.json()).error.code, "NEEDS_TEACHER_INPUT");
+
+      const approval = await fetch(`${base}/api/drafts/${draft.id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentHash: draft.contentHash, approvedBy: "teacher" }),
+      });
+      assert.equal(approval.status, 409);
+      assert.equal((await approval.json()).error.code, "NEEDS_TEACHER_INPUT");
+    } finally {
+      await new Promise((resolve, reject) => server.close((err) => err ? reject(err) : resolve()));
+    }
   });
 });
 

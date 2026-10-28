@@ -38,13 +38,15 @@ function publicRecord(record) {
     approvedAt: record.approvedAt,
     sent: record.sent ?? false,
     sendsMessages: false,
+    needsTeacherInput: record.status === "needs_teacher_input",
+    review: record.review ?? null,
     demoNote: "示範狀態，不會實際傳送訊息給家長。",
   };
 }
 
 function errorStatus(code) {
   if (code === "NOT_FOUND") return 404;
-  if (["HASH_MISMATCH", "NOT_PENDING", "BLOCKED"].includes(code)) return 409;
+  if (["HASH_MISMATCH", "NOT_PENDING", "BLOCKED", "NEEDS_TEACHER_INPUT"].includes(code)) return 409;
   if (["INPUT_TOO_LARGE", "entity.too.large"].includes(code)) return 413;
   if (code === "DECLARATION_REQUIRED") return 400;
   if (["INVALID_AUDIO", "AUDIO_TOO_LONG", "DECODE_EMPTY"].includes(code)) return 422;
@@ -108,8 +110,12 @@ export function createApp(opts = {}) {
         words: unit.words,
         sentencePatterns: unit.sentencePatterns,
       },
-      students: students.map(({ studentCode, nickname, level, unit: studentUnit }) => ({
-        studentCode, nickname, level, unit: studentUnit,
+      students: students.map(({ studentCode, nickname, level, unit: studentUnit, weakWords }) => ({
+        studentCode,
+        nickname,
+        level,
+        unit: studentUnit,
+        weakWords: Array.isArray(weakWords) ? [...weakWords] : [],
       })),
       sampleTranscript: SAMPLE_TRANSCRIPT,
       notices: [
@@ -160,6 +166,9 @@ export function createApp(opts = {}) {
   app.get("/api/drafts/:id/card.svg", (req, res, next) => {
     try {
       const record = store.get(req.params.id);
+      if (!record.card) {
+        return res.status(409).json({ error: { code: "NEEDS_TEACHER_INPUT", message: "草稿尚缺逐字稿證據，請補充老師觀察後重新產生。" } });
+      }
       if (contentHash(record.card) !== record.contentHash) {
         return res.status(409).json({ error: { code: "HASH_MISMATCH", message: "草稿內容與核准雜湊不符，拒絕顯示。" } });
       }

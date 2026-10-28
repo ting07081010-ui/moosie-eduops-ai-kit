@@ -41,6 +41,7 @@
     <label for="student">學生（請從名單選擇，不手動輸入姓名）</label>
     <select id="student"></select>
     <div class="hint" id="unitInfo"></div>
+    <div class="hint">名冊與弱點詞皆為虛構 synthetic fixture（弱點詞僅取自課綱白名單），不是模型推斷或真實學習診斷。</div>
     <label for="transcript">老師課後文字紀錄（打字逐字稿；固定模擬轉寫也不是語音辨識）</label>
     <textarea id="transcript"></textarea>
     <div class="row">
@@ -62,6 +63,7 @@
   <section class="card" id="preview">
     <h2 style="margin-top:0">草稿預覽（4:5）</h2>
     <p>狀態：<span id="status">尚未產生草稿</span></p>
+    <p id="teacherReview" class="notice" role="status" hidden></p>
     <p class="hint">內容雜湊 (SHA-256)：<span id="hash">—</span></p>
     <img id="cardImg" alt="圖卡預覽" hidden>
     <pre id="cardJson" hidden></pre>
@@ -84,6 +86,8 @@ function invalidatePreview(message = "內容已變更，請重新產生草稿") 
   $("cardImg").removeAttribute("src");
   $("cardJson").hidden = true;
   $("cardJson").textContent = "";
+  $("teacherReview").hidden = true;
+  $("teacherReview").textContent = "";
   $("approveBtn").disabled = true;
 }
 
@@ -102,9 +106,14 @@ async function loadContext() {
   try {
     const data = await readResponse(await fetch("/api/context"));
     if (!data.students) throw new Error("無法載入示範資料。");
-    $("student").innerHTML = data.students
-      .map((s) => `<option value="${s.studentCode}">${s.studentCode} · ${s.nickname} · ${s.level} · ${s.unit}</option>`)
-      .join("");
+    $("student").textContent = "";
+    for (const s of data.students) {
+      const label = `${s.studentCode} · ${s.nickname} · ${s.level} · ${s.unit} · 弱點詞：${(s.weakWords ?? []).join("/")}`;
+      const opt = document.createElement("option");
+      opt.value = s.studentCode;
+      opt.textContent = label;
+      $("student").appendChild(opt);
+    }
     $("unitInfo").textContent = `單元：${data.unit.title} ${data.unit.topicLabel}｜單字：${data.unit.words.join(", ")}｜句型：${data.unit.sentencePatterns.join(" ")}`;
     $("transcript").value = data.sampleTranscript;
     $("notices").innerHTML = data.notices.map((notice) => `<div>· ${notice}</div>`).join("");
@@ -143,6 +152,15 @@ $("draftBtn").addEventListener("click", async () => {
     if (sequence !== uploadSequence) return;
     if (!res.ok) return showError(data);
     current = data;
+    if (data.status === "needs_teacher_input") {
+      $("status").textContent = `需要老師補充證據（${data.id}）`;
+      $("hash").textContent = "—";
+      $("teacherReview").textContent = data.review?.message ?? "缺少明確練習依據；請補充老師觀察後重新產生。";
+      $("teacherReview").hidden = false;
+      $("cardJson").textContent = JSON.stringify({ status: data.status, review: data.review }, null, 2);
+      $("cardJson").hidden = false;
+      return;
+    }
     $("status").textContent = `待核准（${data.id}）`;
     $("hash").textContent = data.contentHash;
     $("cardImg").src = `/api/drafts/${data.id}/card.svg`;
@@ -156,7 +174,7 @@ $("draftBtn").addEventListener("click", async () => {
 });
 
 $("approveBtn").addEventListener("click", async () => {
-  if (!current) return;
+  if (!current || current.status !== "pending" || !current.card) return;
   const approvedDraft = current;
   const sequence = uploadSequence;
   $("approveBtn").disabled = true;

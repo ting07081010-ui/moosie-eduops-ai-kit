@@ -463,6 +463,29 @@ describe("moosi-say audio: offline UI source-version safety", () => {
     assert.equal(ui.element("hash").textContent, "—");
   });
 
+  it("shows missing-evidence teacher review without rendering or enabling approval", async () => {
+    const ui = await syntheticUi((url) => {
+      assert.equal(url, "/api/drafts");
+      return Promise.resolve(uiReply({
+        id: "D-001",
+        status: "needs_teacher_input",
+        needsTeacherInput: true,
+        card: null,
+        contentHash: null,
+        review: { message: "請補上 banana 需要練習的觀察。" },
+      }));
+    });
+
+    await ui.fire("draftBtn", "click");
+
+    assert.match(ui.element("status").textContent, /需要老師補充證據/);
+    assert.equal(ui.element("teacherReview").hidden, false);
+    assert.match(ui.element("teacherReview").textContent, /banana/);
+    assert.equal(ui.element("cardImg").hidden, true);
+    assert.equal(ui.element("approveBtn").disabled, true);
+    assert.equal(ui.element("hash").textContent, "—");
+  });
+
   it("resets the synthetic acknowledgement and old preview when a new file is selected", async () => {
     const ui = await syntheticUi(() => { throw new Error("No request expected"); });
     ui.selectSyntheticFile();

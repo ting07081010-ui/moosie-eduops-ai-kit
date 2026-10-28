@@ -127,11 +127,18 @@ export function generateCard({ transcript, studentCode, unit, students }) {
   if (!/^S-\d{3}$/.test(String(studentCode || ""))) {
     throw new MoosiSayError("INVALID_CODE", "學生代號格式錯誤，應為 S-XXX。");
   }
-  const known = (students || []).some((s) => s.studentCode === studentCode);
-  if (!known) {
+  const student = (students || []).find((s) => s.studentCode === studentCode);
+  if (!student) {
     throw new MoosiSayError(
       "UNKNOWN_STUDENT",
       `找不到學生 ${studentCode}，請從名單中選擇。`
+    );
+  }
+  if (!Array.isArray(student.weakWords) || student.weakWords.length === 0 ||
+      student.weakWords.some((word) => !unit.words.includes(word))) {
+    throw new MoosiSayError(
+      "INVALID_PROFILE",
+      `學生 ${studentCode} 的弱詞資料無效，請檢查合成名冊。`
     );
   }
 
@@ -149,29 +156,26 @@ export function generateCard({ transcript, studentCode, unit, students }) {
     );
   }
 
-  // Practice word: prefer a unit word that appears with a practice cue and is
-  // not already marked known-good (e.g. inside an explicit 能說出 clause).
-  // Clauses split on Chinese commas so "能說出 apple 和 banana，grapes…還需要
-  // 多練習" marks apple/banana known-good while grapes stays practice-eligible.
-  const cue = /練|加強|還需要|需要多/;
+  // A practice focus must come from this student's synthetic weakWords and be
+  // explicitly tied to a teacher practice cue in the same transcript clause.
+  // A mention of a weak word alone, or a known-good clause, is not evidence.
+  const cue = /還需要|需要多|需再|仍需|仍要|加強|不熟|容易混淆|尚未熟練/;
   const KNOWN_GOOD = /能說出|都會|已經會/;
-  const clauses = segments.flatMap((s) =>
-    s.text
-      .split(/[，、。；]/)
-      .map((t) => t.trim())
-      .filter(Boolean)
-  );
-  const knownGoodWords = new Set(
-    unit.words.filter((w) =>
-      clauses.some((c) => KNOWN_GOOD.test(c) && containsWord(c, w))
-    )
-  );
-  const withCue = (w) =>
-    segments.some((s) => containsWord(s.text, w) && cue.test(s.text));
-  const practiceWord =
-    unit.words.find((w) => !knownGoodWords.has(w) && withCue(w)) ??
-    unit.words.find(withCue) ??
-    foundWords[foundWords.length - 1];
+  const splitClauses = (text) => text.split(/[，、；;]/).map((part) => part.trim()).filter(Boolean);
+  const focusEvidenceIds = (word) =>
+    segments
+      .filter((segment) => splitClauses(segment.text).some((clause) =>
+        containsWord(clause, word) && cue.test(clause) && !KNOWN_GOOD.test(clause)
+      ))
+      .map((segment) => segment.id);
+  const practiceWord = student.weakWords.find((word) => focusEvidenceIds(word).length > 0);
+  if (!practiceWord) {
+    throw new MoosiSayError(
+      "MISSING_FOCUS_EVIDENCE",
+      `逐字稿沒有明確記錄名冊弱詞（${student.weakWords.join("、")}）需要練習；已交回老師補充觀察後再產生圖卡。`,
+      { focusCandidates: [...student.weakWords] }
+    );
+  }
 
   const sentence = unit.sentencePatterns[0].replace("{fruit}", practiceWord);
   const others = foundWords.filter((w) => w !== practiceWord);
@@ -183,10 +187,6 @@ export function generateCard({ transcript, studentCode, unit, students }) {
   const weakPointZh = `${practiceWord} 的字首 ${practiceWord[0]} 發音需要多練習`;
   const homeMissionZh = `在家玩一分鐘買水果遊戲：輪流說出 ${sentence}`;
 
-  const normalized = segments.map((s) => ({
-    id: s.id,
-    lower: s.text.toLowerCase(),
-  }));
   const sentenceEvidence = evidenceIn(
     segments,
     (text) => text.toLowerCase().includes(sentence.toLowerCase())
@@ -203,16 +203,11 @@ export function generateCard({ transcript, studentCode, unit, students }) {
       segmentIds:
         sentenceEvidence.length > 0
           ? sentenceEvidence
-          : normalized
-              .filter((s) => containsWord(s.lower, practiceWord))
-              .map((s) => s.id),
+          : evidenceIn(segments, (text) => containsWord(text, practiceWord)),
     },
     {
       field: "weak_point_zh",
-      segmentIds: evidenceIn(
-        segments,
-        (text) => containsWord(text, practiceWord) && cue.test(text)
-      ),
+      segmentIds: focusEvidenceIds(practiceWord),
     },
     {
       field: "home_mission_zh",
@@ -235,6 +230,7 @@ export function generateCard({ transcript, studentCode, unit, students }) {
     unit: unit.title,
     summary_zh: summaryZh,
     key_words: [...foundWords],
+    practice_focus: practiceWord,
     sentence,
     weak_point_zh: weakPointZh,
     home_mission_zh: homeMissionZh,
@@ -281,7 +277,30 @@ export function createStore() {
   let counter = 0;
 
   function issue({ transcript, studentCode, unit, students }) {
-    const card = generateCard({ transcript, studentCode, unit, students });
+    let card;
+    try {
+      card = generateCard({ transcript, studentCode, unit, students });
+    } catch (err) {
+      if (!(err instanceof MoosiSayError) ||
+          !["MISSING_EVIDENCE", "MISSING_FOCUS_EVIDENCE"].includes(err.code)) {
+        throw err;
+      }
+      counter += 1;
+      const id = `D-${String(counter).padStart(3, "0")}`;
+      const review = { code: err.code, message: err.message };
+      if (Array.isArray(err.details?.focusCandidates)) review.focusCandidates = [...err.details.focusCandidates];
+      if (Array.isArray(err.details?.missing)) review.missing = [...err.details.missing];
+      if (Array.isArray(err.details?.fields)) review.fields = [...err.details.fields];
+      const record = {
+        id,
+        card: null,
+        contentHash: null,
+        status: "needs_teacher_input",
+        review,
+      };
+      drafts.set(id, record);
+      return cloneRecord(record);
+    }
     const hash = contentHash(card);
     counter += 1;
     const id = `D-${String(counter).padStart(3, "0")}`;
@@ -322,6 +341,12 @@ export function createStore() {
     const record = drafts.get(id);
     if (!record) {
       throw new MoosiSayError("NOT_FOUND", `找不到草稿 ${id}。`);
+    }
+    if (record.status === "needs_teacher_input") {
+      throw new MoosiSayError(
+        "NEEDS_TEACHER_INPUT",
+        "這份草稿尚缺逐字稿證據，不能核准；請補充老師觀察後重新產生。"
+      );
     }
     if (!APPROVER_ROLES.includes(approvedBy)) {
       throw new MoosiSayError(
